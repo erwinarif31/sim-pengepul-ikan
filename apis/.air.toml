@@ -1,0 +1,5 @@
+[build]
+cmd = "go run cmd/web/main.go"
+include_ext = ["go"]
+[log]
+time = true

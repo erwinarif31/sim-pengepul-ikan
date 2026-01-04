@@ -1,0 +1,2 @@
+ALTER TABLE production_costs DROP CONSTRAINT fk_production_costs_seasons;
+ALTER TABLE production_costs DROP COLUMN production_costs_season;

@@ -1,0 +1,229 @@
+# Gemini Agent Instructions: Replicating the `TableData.tsx` Component Architecture
+
+## 1. Objective
+
+Your goal is to understand and replicate the architecture of the `TableData.tsx` component. This document provides an in-depth analysis of the existing component and a step-by-step guide to building a new one with the same robust and flexible design.
+
+The core principles of this architecture are:
+- **Composition over Configuration**: Using the Compound Component pattern to give the developer full control over the table's structure in a declarative way.
+- **Separation of Concerns**: Isolating state management (e.g., sorting) into custom hooks, keeping the UI components "dumb" and focused on rendering.
+- **Prop-Driven API**: Ensuring the component is highly reusable and configurable through a well-defined set of props.
+
+---
+
+## 2. In-Depth Analysis of `TableData.tsx`
+
+### 2.1. The Compound Component Pattern
+
+This is the cornerstone of the architecture. Instead of a single monolithic `<Table>` component that takes dozens of props to configure every possible variation, the component is broken down into a parent (`TableData`) and several children (`TableData.Header`, `TableData.Body`, etc.).
+
+**Why this is powerful:**
+- **Flexibility & Readability**: The JSX for creating a table reads like HTML, making the structure immediately obvious. The developer can compose the table as they see fit.
+- **Separation of Responsibilities**: Each sub-component has one job.
+  - `TableData`: The orchestrator. It manages state via hooks and passes data down but doesn't render any direct HTML table elements itself.
+  - `TableData.Root`: Renders the container `<table>` and a wrapping `<div>` for styling and overflow. It's the structural foundation.
+  - `TableData.Header`: Renders the `<thead>` tag, establishing the table header section.
+  - `TableData.Columns`: A "function-as-a-child" component that iterates over the `columns` array to render the individual `<th>` elements. It contains the logic for handling sort clicks and displaying sort icons.
+  - `TableData.Body`: Renders the `<tbody>`. It crucially contains the conditional logic for displaying either the data rows, a loading skeleton, or a "no data" message.
+  - `TableData.Numbering`: A small, specialized component for rendering the `<td>` with the row number, handling pagination calculations automatically.
+  - `TableData.Pagination`: Renders the pagination controls, but only if pagination data is provided.
+
+### 2.2. State Management with Custom Hooks (`useTableSorting`)
+
+All logic related to which column is sorted and in which direction is encapsulated within the `useTableSorting` hook.
+
+- **Encapsulation**: The `TableData` component doesn't know or care *how* the sorting state is updated. It just calls `handleSortColumn`. This makes the main component cleaner and easier to read.
+- **Reusability**: This hook could be used by any other component that needs to manage a sorted state, not just this table.
+- **State Flow**:
+  1. `TableData` calls `useTableSorting()` to get `sortedColumn` (the state) and `handleSortColumn` (the updater function).
+  2. It passes `sortedColumn` and `handleSortColumn` as props down to `TableData.Columns`.
+  3. `TableData.Columns` attaches `handleSortColumn` to the `onClick` event of each sortable `<th>`.
+  4. When a user clicks, the state is updated within the hook, `TableData` re-renders, and the new `sortedColumn` state flows back down, causing the UI (the sort icons) to update.
+
+### 2.3. Prop-Driven Configuration
+
+The component's behavior is controlled entirely by its props, making it a predictable and reusable black box.
+
+- **`columns`**: An array of objects that defines the entire table structure. Each object tells the component how to render a column's header and what data key to use for its cells.
+- **`data`**: The array of data objects to be rendered. The component is agnostic about the shape of this data; it simply uses the `key` from the `columns` prop to access the correct values.
+- **`isLoading`**: A simple boolean that completely changes the `TableData.Body`'s output, switching from data to a skeleton loader. This is a clean and effective way to handle loading states.
+- **`pagination` & `onPageChange`**: These props control the rendering and functionality of the pagination controls. If `pagination` is not provided, the controls don't render.
+
+---
+
+## 3. Instructions to Replicate the Architecture
+
+Follow these steps to build a new table component, `NewGeminiTable`, with the same architecture.
+
+### Step 1: Define the Core TypeScript Interfaces
+
+Start by defining the shape of your props. This provides clarity and type safety from the beginning.
+
+```typescript
+// /features/table/types.ts
+
+// Defines a single column header
+export interface TableHeader {
+    key: string; // Corresponds to a key in your data object
+    title: React.ReactNode; // What to display in the header
+    sortable?: boolean; // Is this column sortable?
+    className?: string; // Custom classes for the <td> cells in this column
+    columnClassName?: string; // Custom classes for the <th> header cell
+}
+
+// Defines the props for the main table component
+export interface NewGeminiTableProps {
+    columns: TableHeader[];
+    data: Array<Record<string, any>>;
+    isLoading?: boolean;
+    useNumbering?: boolean;
+    pagination?: {
+        current_page: number;
+        per_page: number;
+        total: number;
+    };
+    onPageChange?: (newPage: number) => void;
+}
+```
+
+### Step 2: Create the `useTableSorting` Hook
+
+Isolate the sorting logic into its own file.
+
+```typescript
+// /hooks/useTableSorting.ts
+import { useState } from 'react';
+import type { TableHeader } from '@/features/table/types';
+
+export interface TableSortedColumn {
+    key: string;
+    order: 'asc' | 'desc';
+}
+
+export const useTableSorting = (initialSortKey: string = '') => {
+    const [sortedColumn, setSortedColumn] = useState<TableSortedColumn>({
+        key: initialSortKey,
+        order: 'asc',
+    });
+
+    const handleSortColumn = (column: TableHeader) => {
+        if (!column.sortable) return;
+
+        setSortedColumn(current => {
+            // If clicking a new column, sort ascending.
+            if (current.key !== column.key) {
+                return { key: column.key, order: 'asc' };
+            }
+            // If clicking the same column, toggle the order.
+            return { key: column.key, order: current.order === 'asc' ? 'desc' : 'asc' };
+        });
+    };
+
+    return { sortedColumn, handleSortColumn };
+};
+```
+
+### Step 3: Build the Component and its Sub-Components
+
+Create the `NewGeminiTable.tsx` file and implement the compound components.
+
+```typescript
+// /components/NewGeminiTable.tsx
+
+// --- Main Component (Orchestrator) ---
+const NewGeminiTable = ({ columns, data, isLoading, ...rest }: NewGeminiTableProps) => {
+    const { sortedColumn, handleSortColumn } = useTableSorting();
+
+    // Note: You would need to implement the actual sorting of `data` here
+    // based on `sortedColumn` before passing it to the body.
+    // const sortedData = useMemo(() => { ... sort logic ... }, [data, sortedColumn]);
+
+    return (
+        <Stack> {/* Assuming a Stack component for layout */}
+            <NewGeminiTable.Root>
+                <NewGeminiTable.Header
+                    columns={columns}
+                    handleSortColumn={handleSortColumn}
+                    sortedColumn={sortedColumn}
+                    useNumbering={rest.useNumbering}
+                />
+                <NewGeminiTable.Body
+                    columns={columns}
+                    data={data} // Should be sortedData
+                    isLoading={isLoading}
+                    useNumbering={rest.useNumbering}
+                />
+            </NewGeminiTable.Root>
+            <NewGeminiTable.Pagination {...rest} />
+        </Stack>
+    );
+};
+
+// --- Sub-Components ---
+
+NewGeminiTable.Root = ({ children }) => (
+    <div className="overflow-x-auto rounded-lg border">
+        <table className="table w-full">{children}</table>
+    </div>
+);
+
+NewGeminiTable.Header = ({ columns, handleSortColumn, sortedColumn, useNumbering }) => (
+    <thead className="bg-base-200">
+        <tr>
+            {useNumbering && <th className="w-12">No</th>}
+            {columns.map(col => (
+                <th
+                    key={col.key}
+                    className={col.columnClassName}
+                    onClick={() => handleSortColumn(col)}
+                >
+                    {col.title}
+                    {/* Add sorting icon logic here based on sortedColumn */}
+                </th>
+            ))}
+        </tr>
+    </thead>
+);
+
+NewGeminiTable.Body = ({ columns, data, isLoading, useNumbering }) => {
+    if (isLoading) {
+        return (
+            <tbody>
+                {/* Render Skeleton Rows */}
+            </tbody>
+        );
+    }
+
+    if (data.length === 0) {
+        return (
+            <tbody>
+                <tr>
+                    <td colSpan={columns.length + (useNumbering ? 1 : 0)}>
+                        No data available.
+                    </td>
+                </tr>
+            </tbody>
+        );
+    }
+
+    return (
+        <tbody>
+            {data.map((row, index) => (
+                <tr key={index}>
+                    {useNumbering && <td>{index + 1}</td>}
+                    {columns.map(col => (
+                        <td key={col.key} className={col.className}>
+                            {row[col.key]}
+                        </td>
+                    ))}
+                </tr>
+            ))}
+        </tbody>
+    );
+};
+
+// ... Implement Pagination and other sub-components similarly ...
+
+export default NewGeminiTable;
+```
+This structured approach ensures your new component will be as maintainable, reusable, and developer-friendly as the original `TableData.tsx`.

@@ -1,0 +1,77 @@
+package config
+
+import (
+	"github.com/erwinarif31/catchery-api/internal/delivery/http"
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/route"
+	"github.com/erwinarif31/catchery-api/internal/repository"
+	"github.com/erwinarif31/catchery-api/internal/usecase"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
+)
+
+type BootstrapConfig struct {
+	DB       *gorm.DB
+	App      *fiber.App
+	Log      *logrus.Logger
+	Validate *validator.Validate
+	Config   *viper.Viper
+	// Producer *kafka.Producer
+}
+
+func Bootstrap(config *BootstrapConfig) {
+	// setup repositories
+	// userRepository := repository.NewUserRepository(config.Log)
+	// contactRepository := repository.NewContactRepository(config.Log)
+	// addressRepository := repository.NewAddressRepository(config.Log)
+		bagangRepository := repository.NewBagangRepository(config.Log)
+		salesRepository := repository.NewSalesRepository(config.Log)
+	
+		// setup producer
+		// var userProducer *messaging.UserProducer
+		// var contactProducer *messaging.ContactProducer
+		// var addressProducer *messaging.AddressProducer
+	
+		// if config.Producer != nil {
+		// 	userProducer = messaging.NewUserProducer(config.Producer, config.Log)
+		// 	contactProducer = messaging.NewContactProducer(config.Producer, config.Log)
+		// 	addressProducer = messaging.NewAddressProducer(config.Producer, config.Log)
+		// }
+	
+		// setup use cases
+		// userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, userProducer)
+		// contactUseCase := usecase.NewContactUseCase(config.DB, config.Log, config.Validate, contactRepository, contactProducer)
+		// addressUseCase := usecase.NewAddressUseCase(config.DB, config.Log, config.Validate, contactRepository, addressRepository, addressProducer)
+		bagangUseCase := usecase.NewBagangUseCase(
+			config.DB,
+			config.Log,
+			config.Validate,
+			bagangRepository,
+		)
+		salesUseCase := usecase.NewSalesUseCase(
+			config.DB,
+			config.Log,
+			config.Validate,
+			salesRepository,
+		)
+	
+		// setup controller
+		// userController := http.NewUserController(userUseCase, config.Log)
+		// contactController := http.NewContactController(contactUseCase, config.Log)
+		// addressController := http.NewAddressController(addressUseCase, config.Log)
+		bagangController := http.NewBagangController(bagangUseCase, config.Log)
+		salesController := http.NewSalesController(config.Log, salesUseCase)
+	
+		// setup middleware
+		// authMiddleware := middleware.NewAuth(userUseCase)
+	
+		routeConfig := route.RouteConfig{
+			App:              config.App,
+			// AuthMiddleware:   authMiddleware,
+			BagangController: bagangController,
+			SalesController:  salesController,
+		}
+	routeConfig.Setup()
+}

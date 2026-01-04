@@ -1,0 +1,19 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Air's temporary directory and logs
+tmp
+air.log
+
+# Go binaries
+*.exe
+app
+
+# IDE metadata
+.idea
+.vscode

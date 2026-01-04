@@ -1,0 +1,7 @@
+CREATE TABLE sales(
+    id SERIAL PRIMARY KEY,
+    customer VARCHAR(255) NOT NULL,
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_paid_off BOOLEAN DEFAULT FALSE,
+    paid_off_at TIMESTAMP
+);
