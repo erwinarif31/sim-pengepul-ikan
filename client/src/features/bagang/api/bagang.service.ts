@@ -16,7 +16,7 @@ class BagangService {
         { signal, params }: RequestArgs,
     ): ApiResponse<BagangResponse["list"]> {
         // Replace '/[feature]' with your actual API endpoint
-        return await http.get("/bagang", { signal, params });
+        return await http.get("/api/bagang", { signal, params });
     }
 
     // Add other GET methods as needed (e.g., get[Feature]ById)

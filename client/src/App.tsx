@@ -1,42 +1,37 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import BagangPage from "./pages/Bagang/page";
-
+import { Route, Routes } from "react-router-dom";
 import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./component/common/ScrollToTop";
-import Dashboard from "./pages/Dashboard/dashboard";
+import DashboardPage from "./pages/Dashboard/dashboard";
+import SalesPage from "./pages/Sales/page";
+import AddSalesPage from "./pages/Sales/Add/page";
+import DetailSalesPage from "./pages/Sales/Detail/page";
+import BagangPage from "./pages/Bagang/page";
 import SeasonPage from "./pages/Season/page";
-import BagangHarvestPage from "./pages/Sales/page";
-import SalesDetailPage from "./pages/Sales/Detail/page";
-import { QueryClientProvider } from "@tanstack/react-query";
-import useGlobalQueryClient from "./hooks/useGlobalQueryClient";
-import BagangHarvestCreatePage from "./pages/Sales/Add/page";
+import HarvestTypePage from "./pages/HarvestType/page";
+import ProductionCostTypePage from "./pages/ProductionCostType/page";
+import WorkerPage from "./pages/Worker/page";
 
-export default function App() {
-    const queryClient = useGlobalQueryClient();
+function App() {
     return (
-        <>
-            <QueryClientProvider client={queryClient}>
-                <Router>
-                    <ScrollToTop />
-                    <Routes>
-                        <Route element={<AppLayout />}>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/bagang" element={<BagangPage />} />
-                            <Route path="/musim" element={<SeasonPage />} />
-                            <Route path="/pembelian" element={<BagangHarvestPage />} />
-                            <Route
-                                path="/pembelian/:id"
-                                element={<SalesDetailPage />}
-                            />
-                            <Route
-                                path="/hasil-panen/tambah"
-                                element={<BagangHarvestCreatePage />}
-                            />
-                            {/* <Route path="/penjualan" element={<BagangHarvestPage />} /> */}
-                        </Route>
-                    </Routes>
-                </Router>
-            </QueryClientProvider>
-        </>
+        <Routes>
+            <Route element={<AppLayout />}>
+                <Route index path="/" element={<DashboardPage />} />
+                <Route path="/bagang" element={<BagangPage />} />
+                <Route path="/musim" element={<SeasonPage />} />
+                <Route path="/jenis-ikan" element={<HarvestTypePage />} />
+                <Route
+                    path="/jenis-pengeluaran"
+                    element={<ProductionCostTypePage />}
+                />
+                <Route path="/pekerja" element={<WorkerPage />} />
+                <Route path="/pemilik" element={<WorkerPage />} />
+
+                {/* Sales */}
+                <Route path="/pembelian" element={<SalesPage />} />
+                <Route path="/pembelian/tambah" element={<AddSalesPage />} />
+                <Route path="/pembelian/:id" element={<DetailSalesPage />} />
+            </Route>
+        </Routes>
     );
 }
+
+export default App;

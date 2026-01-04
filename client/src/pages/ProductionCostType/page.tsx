@@ -1,16 +1,16 @@
 import PageBreadcrumb from "../../component/common/PageBreadCrumb";
 import PageMeta from "../../component/common/PageMeta";
-import SeasonTable from "./table";
+import ProductionCostTypeTable from "./table";
 
-export default function SeasonPage() {
+export default function ProductionCostTypePage() {
     return (
         <>
             <PageMeta
-                title="Catchery | Musim"
+                title="Catchery | Jenis Pengeluaran"
                 description="Dashboard Catchery"
             />
-            <PageBreadcrumb pageTitle="Musim" />
-            <SeasonTable />
+            <PageBreadcrumb pageTitle="Jenis Pengeluaran" />
+            <ProductionCostTypeTable />
         </>
     );
 }

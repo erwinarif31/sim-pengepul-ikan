@@ -15,7 +15,7 @@ class SalesService {
     static async getAllSales(
         { signal, params }: RequestArgs,
     ): ApiResponse<SalesResponse["list"]> {
-        return await http.get("/api/sales", { signal, params });
+        return await http.get("/api/harvests", { signal, params });
     }
 }
 

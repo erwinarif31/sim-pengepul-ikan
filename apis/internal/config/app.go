@@ -26,52 +26,66 @@ func Bootstrap(config *BootstrapConfig) {
 	// userRepository := repository.NewUserRepository(config.Log)
 	// contactRepository := repository.NewContactRepository(config.Log)
 	// addressRepository := repository.NewAddressRepository(config.Log)
-		bagangRepository := repository.NewBagangRepository(config.Log)
-		salesRepository := repository.NewSalesRepository(config.Log)
-	
-		// setup producer
-		// var userProducer *messaging.UserProducer
-		// var contactProducer *messaging.ContactProducer
-		// var addressProducer *messaging.AddressProducer
-	
-		// if config.Producer != nil {
-		// 	userProducer = messaging.NewUserProducer(config.Producer, config.Log)
-		// 	contactProducer = messaging.NewContactProducer(config.Producer, config.Log)
-		// 	addressProducer = messaging.NewAddressProducer(config.Producer, config.Log)
-		// }
-	
-		// setup use cases
-		// userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, userProducer)
-		// contactUseCase := usecase.NewContactUseCase(config.DB, config.Log, config.Validate, contactRepository, contactProducer)
-		// addressUseCase := usecase.NewAddressUseCase(config.DB, config.Log, config.Validate, contactRepository, addressRepository, addressProducer)
-		bagangUseCase := usecase.NewBagangUseCase(
-			config.DB,
-			config.Log,
-			config.Validate,
-			bagangRepository,
-		)
-		salesUseCase := usecase.NewSalesUseCase(
-			config.DB,
-			config.Log,
-			config.Validate,
-			salesRepository,
-		)
-	
-		// setup controller
-		// userController := http.NewUserController(userUseCase, config.Log)
-		// contactController := http.NewContactController(contactUseCase, config.Log)
-		// addressController := http.NewAddressController(addressUseCase, config.Log)
-		bagangController := http.NewBagangController(bagangUseCase, config.Log)
-		salesController := http.NewSalesController(config.Log, salesUseCase)
-	
-		// setup middleware
-		// authMiddleware := middleware.NewAuth(userUseCase)
-	
-		routeConfig := route.RouteConfig{
-			App:              config.App,
-			// AuthMiddleware:   authMiddleware,
-			BagangController: bagangController,
-			SalesController:  salesController,
-		}
-	routeConfig.Setup()
+			bagangRepository := repository.NewBagangRepository(config.Log)
+			salesRepository := repository.NewSalesRepository(config.Log)
+			harvestTypeRepository := repository.NewHarvestTypeRepository(config.Log)
+			productionCostTypeRepository := repository.NewProductionCostTypeRepository(config.Log)
+			workerRepository := repository.NewWorkerRepository(config.Log)
+			seasonRepository := repository.NewSeasonRepository(config.Log)
+		
+			// setup producer
+			// var userProducer *messaging.UserProducer
+			// var contactProducer *messaging.ContactProducer
+			// var addressProducer *messaging.AddressProducer
+		
+			// if config.Producer != nil {
+			// 	userProducer = messaging.NewUserProducer(config.Producer, config.Log)
+			// 	contactProducer = messaging.NewContactProducer(config.Producer, config.Log)
+			// 	addressProducer = messaging.NewAddressProducer(config.Producer, config.Log)
+			// }
+		
+			// setup use cases
+			// userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, userProducer)
+			// contactUseCase := usecase.NewContactUseCase(config.DB, config.Log, config.Validate, contactRepository, contactProducer)
+			// addressUseCase := usecase.NewAddressUseCase(config.DB, config.Log, config.Validate, contactRepository, addressRepository, addressProducer)
+			bagangUseCase := usecase.NewBagangUseCase(
+				config.DB,
+				config.Log,
+				config.Validate,
+				bagangRepository,
+			)
+			salesUseCase := usecase.NewSalesUseCase(
+				config.DB,
+				config.Log,
+				config.Validate,
+				salesRepository,
+			)
+			masterDataUseCase := usecase.NewMasterDataUseCase(
+				config.DB,
+				config.Log,
+				harvestTypeRepository,
+				productionCostTypeRepository,
+				workerRepository,
+				seasonRepository,
+			)
+		
+			// setup controller
+			// userController := http.NewUserController(userUseCase, config.Log)
+			// contactController := http.NewContactController(contactUseCase, config.Log)
+			// addressController := http.NewAddressController(addressUseCase, config.Log)
+			bagangController := http.NewBagangController(bagangUseCase, config.Log)
+			salesController := http.NewSalesController(config.Log, salesUseCase)
+			masterDataController := http.NewMasterDataController(config.Log, masterDataUseCase)
+		
+			// setup middleware
+			// authMiddleware := middleware.NewAuth(userUseCase)
+		
+			routeConfig := route.RouteConfig{
+				App:              config.App,
+				// AuthMiddleware:   authMiddleware,
+				BagangController:     bagangController,
+				SalesController:      salesController,
+				MasterDataController: masterDataController,
+			}	
+    routeConfig.Setup()
 }

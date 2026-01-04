@@ -15,11 +15,12 @@ class SeasonService {
     static async getAllSeasons(
         { signal, params }: RequestArgs,
     ): ApiResponse<SeasonResponse["list"]> {
-        // Replace '/[feature]' with your actual API endpoint
-        return await http.get("/seasons/all", { signal, params });
+        return await http.get("/api/seasons", { signal, params });
     }
 
-    // Add other GET methods as needed (e.g., get[Feature]ById)
+    static async endCurrentSeason(): ApiResponse<string> {
+        return await http.post("/api/seasons/end");
+    }
 }
 
 export default SeasonService;

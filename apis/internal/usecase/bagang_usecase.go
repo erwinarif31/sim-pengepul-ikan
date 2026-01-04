@@ -61,8 +61,25 @@ func (b *BagangUseCase) Create(
 
 	if err := tx.Commit().Error; err != nil {
 		b.Log.WithError(err).Error("error creating bagang")
-    return nil, fiber.ErrInternalServerError
+		return nil, fiber.ErrInternalServerError
 	}
 	log.Println("test")
 	return converter.BagangToResponse(bagang), nil
+}
+
+func (b *BagangUseCase) Search(ctx context.Context) ([]model.BagangResponse, error) {
+	tx := b.DB.WithContext(ctx)
+
+	var bagangs []entity.Bagang
+	if err := b.BagangRepository.FindAll(tx, &bagangs); err != nil {
+		b.Log.WithError(err).Error("error finding bagangs")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	responses := make([]model.BagangResponse, len(bagangs))
+	for i, bagang := range bagangs {
+		responses[i] = *converter.BagangToResponse(&bagang)
+	}
+
+	return responses, nil
 }
