@@ -59,12 +59,17 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 	
 
-		c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
-
-		c.App.Get("/api/workers", c.MasterDataController.SearchWorkers)
-
-		c.App.Get("/api/seasons", c.MasterDataController.SearchSeasons)
-
+			c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
+			c.App.Post("/api/production-cost-types", c.MasterDataController.CreateProductionCostType)
+				c.App.Delete("/api/production-cost-types/:name", c.MasterDataController.DeleteProductionCostType)
+			
+				c.App.Get("/api/workers", c.MasterDataController.SearchWorkers)
+				c.App.Post("/api/workers", c.MasterDataController.CreateWorker)
+				c.App.Put("/api/workers/:id", c.MasterDataController.UpdateWorker)
+				c.App.Delete("/api/workers/:id", c.MasterDataController.DeleteWorker)
+				c.App.Get("/api/workers/:id", c.MasterDataController.FindWorkerById)
+			
+				c.App.Get("/api/seasons", c.MasterDataController.SearchSeasons)
 		c.App.Post("/api/seasons/end", c.MasterDataController.EndSeason)
 
 	}

@@ -17,6 +17,18 @@ class ProductionCostTypeService {
     ): ApiResponse<ProductionCostTypeResponse["list"]> {
         return await http.get("/api/production-cost-types", { signal, params });
     }
+
+    static async createProductionCostType(
+        data: { name: string },
+    ): ApiResponse<ProductionCostTypeResponse["detail"]> {
+        return await http.post("/api/production-cost-types", data);
+    }
+
+    static async deleteProductionCostType(
+        name: string,
+    ): ApiResponse<boolean> {
+        return await http.delete(`/api/production-cost-types/${name}`);
+    }
 }
 
 export default ProductionCostTypeService;

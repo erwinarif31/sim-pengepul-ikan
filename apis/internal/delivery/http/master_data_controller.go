@@ -60,6 +60,74 @@ func (c *MasterDataController) SearchProductionCostTypes(ctx *fiber.Ctx) error {
 	return ctx.JSON(model.WebResponse[[]model.ProductionCostTypeResponse]{Data: responses})
 }
 
+func (c *MasterDataController) CreateProductionCostType(ctx *fiber.Ctx) error {
+	request := new(model.CreateMasterDataRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		c.Log.WithError(err).Error("error parsing request body")
+		return fiber.ErrBadRequest
+	}
+
+	response, err := c.MasterDataUseCase.CreateProductionCostType(ctx.UserContext(), request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.ProductionCostTypeResponse]{Data: response})
+}
+
+func (c *MasterDataController) DeleteProductionCostType(ctx *fiber.Ctx) error {
+	name := ctx.Params("name")
+	if err := c.MasterDataUseCase.DeleteProductionCostType(ctx.UserContext(), name); err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[bool]{Data: true})
+}
+
+func (c *MasterDataController) CreateWorker(ctx *fiber.Ctx) error {
+	request := new(model.CreateMasterDataRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		c.Log.WithError(err).Error("error parsing request body")
+		return fiber.ErrBadRequest
+	}
+
+	response, err := c.MasterDataUseCase.CreateWorker(ctx.UserContext(), request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.WorkerResponse]{Data: response})
+}
+
+func (c *MasterDataController) UpdateWorker(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	request := new(model.CreateMasterDataRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		c.Log.WithError(err).Error("error parsing request body")
+		return fiber.ErrBadRequest
+	}
+
+	response, err := c.MasterDataUseCase.UpdateWorker(ctx.UserContext(), id, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.WorkerResponse]{Data: response})
+}
+
+func (c *MasterDataController) DeleteWorker(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	if err := c.MasterDataUseCase.DeleteWorker(ctx.UserContext(), id); err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[bool]{Data: true})
+}
+
+func (c *MasterDataController) FindWorkerById(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	response, err := c.MasterDataUseCase.FindWorkerById(ctx.UserContext(), id)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.WorkerResponse]{Data: response})
+}
+
 func (c *MasterDataController) SearchWorkers(ctx *fiber.Ctx) error {
 	responses, err := c.MasterDataUseCase.SearchWorkers(ctx.UserContext())
 	if err != nil {

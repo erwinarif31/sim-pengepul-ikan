@@ -17,6 +17,27 @@ class WorkerService {
     ): ApiResponse<WorkerResponse["list"]> {
         return await http.get("/api/workers", { signal, params });
     }
+
+    static async getWorkerById(id: string): ApiResponse<WorkerResponse["detail"]> {
+        return await http.get(`/api/workers/${id}`);
+    }
+
+    static async createWorker(
+        data: { name: string },
+    ): ApiResponse<WorkerResponse["detail"]> {
+        return await http.post("/api/workers", data);
+    }
+
+    static async updateWorker(
+        id: string,
+        data: { name: string },
+    ): ApiResponse<WorkerResponse["detail"]> {
+        return await http.put(`/api/workers/${id}`, data);
+    }
+
+    static async deleteWorker(id: string): ApiResponse<boolean> {
+        return await http.delete(`/api/workers/${id}`);
+    }
 }
 
 export default WorkerService;
