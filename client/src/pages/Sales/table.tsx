@@ -2,73 +2,63 @@ import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
 import { EyeIcon } from "../../icons";
-import useSalesQuery from "../../features/sales/hooks/useSales";
-
-const columns: TableHeader[] = [
-    {
-        key: "id",
-        title: "ID",
-        sortable: true,
-        columnClassName: "w-1/12",
-    },
-    {
-        key: "customer",
-        title: "Customer",
-        sortable: true,
-        columnClassName: "w-1/4",
-    },
-    {
-        key: "issued_at",
-        title: "Date",
-        sortable: true,
-        columnClassName: "w-1/4",
-        render: (row) => new Date(row.issued_at).toLocaleDateString(),
-    },
-    {
-        key: "is_paid_off",
-        title: "Status",
-        sortable: true,
-        columnClassName: "w-1/4",
-        render: (row) => (
-            <span
-                className={`px-2 py-1 rounded text-xs text-white ${
-                    row.is_paid_off ? "bg-green-500" : "bg-red-500"
-                }`}
-            >
-                {row.is_paid_off ? "Paid" : "Unpaid"}
-            </span>
-        ),
-    },
-    {
-        key: "actions",
-        title: "Actions",
-        render: (row) => (
-            <a
-                className="flex justify-center text-blue-500 hover:underline"
-                href={"/pembelian/" + row.id}
-            >
-                <EyeIcon className="text-blue-700 cursor-pointer size-5 hover:text-error-500 dark:text-gray-400 dark:hover:text-error-500" />
-            </a>
-        ),
-    },
-];
+import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
+import { Link } from "react-router-dom";
 
 const SalesTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    const { data: response, isLoading, error } = useSalesQuery();
+    // TODO: Pass filter { is_active: true } when backend supports it
+    const { data: response, isLoading, error } = useBagangQuery();
 
     const data = response?.data?.data || [];
+    // Client-side filter for now until backend supports it
+    const activeBagangs = data.filter((bagang) => bagang.is_active);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
 
-    const paginatedData = data.slice(
+    const paginatedData = activeBagangs.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
     );
+
+    const columns: TableHeader[] = [
+        {
+            key: "name",
+            title: "Nama Bagang",
+            sortable: true,
+            columnClassName: "w-1/4",
+        },
+        {
+            key: "worker_name",
+            title: "Pekerja",
+            sortable: true,
+            columnClassName: "w-1/4",
+        },
+        {
+            key: "owner_name",
+            title: "Pemilik",
+            sortable: true,
+            columnClassName: "w-1/4",
+        },
+        {
+            key: "actions",
+            title: "Detail",
+            render: (row) => (
+                <div className="flex justify-center">
+                    <Link
+                        to={`/pembelian/${row.id}`}
+                        className="text-blue-500 hover:text-blue-700"
+                    >
+                        <EyeIcon className="size-5" />
+                    </Link>
+                </div>
+            ),
+        },
+    ];
 
     if (error) {
         return (
@@ -88,7 +78,7 @@ const SalesTable = () => {
                 pagination={{
                     current_page: currentPage,
                     per_page: itemsPerPage,
-                    total: data.length,
+                    total: activeBagangs.length,
                 }}
                 onPageChange={handlePageChange}
             />
