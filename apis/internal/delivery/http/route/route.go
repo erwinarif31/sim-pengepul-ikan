@@ -35,11 +35,17 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 	// c.App.Post("/api/users", c.UserController.Register)
 
-	// c.App.Post("/api/users/_login", c.UserController.Login)
+		// c.App.Post("/api/users/_login", c.UserController.Login)
 
-	c.App.Post("/api/bagang", c.BagangController.Create)
+		c.App.Post("/api/bagang", c.BagangController.Create)
 
-	c.App.Get("/api/bagang", c.BagangController.Search)
+		c.App.Put("/api/bagang/:id", c.BagangController.Update)
+
+		c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
+
+		c.App.Get("/api/bagang/:id", c.BagangController.FindById)
+
+		c.App.Get("/api/bagang", c.BagangController.Search)
 
 		c.App.Get("/api/sales", c.SalesController.Search)
 

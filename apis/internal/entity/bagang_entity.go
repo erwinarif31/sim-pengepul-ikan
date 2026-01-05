@@ -8,8 +8,11 @@ type Bagang struct {
 	Isactive  bool      `gorm:"column:isactive;default:true"`
 	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
-	WorkerID  string    `gorm:"column:worker_id"`
-	OwnerID   string    `gorm:"column:owner_id"`
+	WorkerID  string    `gorm:"column:worker_id;type:uuid"`
+	OwnerID   string    `gorm:"column:owner_id;type:uuid"`
+
+	Worker *Worker `gorm:"foreignKey:WorkerID;references:ID"`
+	Owner  *Worker `gorm:"foreignKey:OwnerID;references:ID"`
 }
 
 func (b *Bagang) TableName() string {

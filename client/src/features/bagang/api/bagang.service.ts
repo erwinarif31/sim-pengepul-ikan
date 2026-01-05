@@ -15,11 +15,27 @@ class BagangService {
     static async getAllBagangs(
         { signal, params }: RequestArgs,
     ): ApiResponse<BagangResponse["list"]> {
-        // Replace '/[feature]' with your actual API endpoint
         return await http.get("/api/bagang", { signal, params });
     }
 
-    // Add other GET methods as needed (e.g., get[Feature]ById)
+    static async getBagangById(id: string): ApiResponse<BagangResponse["detail"]> {
+        return await http.get(`/api/bagang/${id}`);
+    }
+
+    static async createBagang(data: any): ApiResponse<BagangResponse["detail"]> {
+        return await http.post("/api/bagang", data);
+    }
+
+    static async updateBagang(
+        id: string,
+        data: any,
+    ): ApiResponse<BagangResponse["detail"]> {
+        return await http.put(`/api/bagang/${id}`, data);
+    }
+
+    static async deleteBagang(id: string): ApiResponse<boolean> {
+        return await http.delete(`/api/bagang/${id}`);
+    }
 }
 
 export default BagangService;
