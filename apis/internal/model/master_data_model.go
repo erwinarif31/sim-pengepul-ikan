@@ -20,3 +20,7 @@ type SeasonResponse struct {
 	StartDate time.Time  `json:"start_date"`
 	EndDate   *time.Time `json:"end_date"`
 }
+
+type CreateMasterDataRequest struct {
+	Name string `json:"name" validate:"required"`
+}

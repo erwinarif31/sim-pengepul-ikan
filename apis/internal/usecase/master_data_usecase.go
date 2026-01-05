@@ -96,6 +96,49 @@ func (c *MasterDataUseCase) SearchSeasons(ctx context.Context) ([]model.SeasonRe
 	return responses, nil
 }
 
+func (c *MasterDataUseCase) CreateHarvestType(ctx context.Context, request *model.CreateMasterDataRequest) (*model.HarvestTypeResponse, error) {
+	tx := c.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	if err := c.DB.WithContext(ctx).Where("name = ?", request.Name).First(&entity.HarvestType{}).Error; err == nil {
+		return nil, fiber.NewError(fiber.StatusConflict, "Harvest Type already exists")
+	}
+
+	entity := &entity.HarvestType{
+		Name: request.Name,
+	}
+
+	if err := c.HarvestTypeRepository.Create(tx, entity); err != nil {
+		c.Log.WithError(err).Error("error creating harvest type")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.Log.WithError(err).Error("error committing harvest type")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	return converter.HarvestTypeToResponse(entity), nil
+}
+
+func (c *MasterDataUseCase) DeleteHarvestType(ctx context.Context, name string) error {
+	tx := c.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	entity := &entity.HarvestType{Name: name}
+	if err := c.HarvestTypeRepository.Delete(tx, entity); err != nil {
+		c.Log.WithError(err).Error("error deleting harvest type")
+		return fiber.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.Log.WithError(err).Error("error committing delete harvest type")
+		return fiber.ErrInternalServerError
+	}
+
+	return nil
+}
+
 func (c *MasterDataUseCase) EndCurrentSeason(ctx context.Context) error {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
-import useSeasonQuery, {
-    useEndSeasonMutation,
-} from "../../features/season/hooks/useSeason";
+import useSeasonQuery from "../../features/season/hooks/useSeasonQuery";
+import useEndSeasonMutation from "../../features/season/hooks/useEndSeasonMutation";
 import Button from "../../component/ui/button/Button";
 
 const columns: TableHeader[] = [

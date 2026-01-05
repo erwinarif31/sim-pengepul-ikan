@@ -30,6 +30,28 @@ func (c *MasterDataController) SearchHarvestTypes(ctx *fiber.Ctx) error {
 	return ctx.JSON(model.WebResponse[[]model.HarvestTypeResponse]{Data: responses})
 }
 
+func (c *MasterDataController) CreateHarvestType(ctx *fiber.Ctx) error {
+	request := new(model.CreateMasterDataRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		c.Log.WithError(err).Error("error parsing request body")
+		return fiber.ErrBadRequest
+	}
+
+	response, err := c.MasterDataUseCase.CreateHarvestType(ctx.UserContext(), request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.HarvestTypeResponse]{Data: response})
+}
+
+func (c *MasterDataController) DeleteHarvestType(ctx *fiber.Ctx) error {
+	name := ctx.Params("name")
+	if err := c.MasterDataUseCase.DeleteHarvestType(ctx.UserContext(), name); err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[bool]{Data: true})
+}
+
 func (c *MasterDataController) SearchProductionCostTypes(ctx *fiber.Ctx) error {
 	responses, err := c.MasterDataUseCase.SearchProductionCostTypes(ctx.UserContext())
 	if err != nil {

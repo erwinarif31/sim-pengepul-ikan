@@ -1,8 +1,8 @@
 import PageMeta from "../../component/common/PageMeta";
-import EcommerceMetrics from "../../component/metrics/EcommerceMetrics";
-import MonthlySalesChart from "../../component/metrics/MonthlySalesChart";
-import MonthlyTarget from "../../component/metrics/MonthlyTarget";
-import StatisticsChart from "../../component/metrics/StatisticsChart";
+import EcommerceMetrics from "../../component/ecommerce/EcommerceMetrics";
+import MonthlySalesChart from "../../component/ecommerce/MonthlySalesChart";
+import MonthlyTarget from "../../component/ecommerce/MonthlyTarget";
+import StatisticsChart from "../../component/ecommerce/StatisticsChart";
 
 export default function Dashboard() {
     return (

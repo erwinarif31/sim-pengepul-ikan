@@ -1,4 +1,4 @@
-import { Link as RouterLink } from "react-router";
+import { Link as RouterLink } from "react-router-dom";
 
 interface LinkProps {
   to: string; // Use 'to' for React Router navigation

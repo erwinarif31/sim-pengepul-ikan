@@ -1,25 +1,25 @@
-import type { ReactNode } from 'react';
+import React from "react";
 
-// Defines a single column header
 export interface TableHeader {
-    key: string; // Corresponds to a key in your data object
-    title: ReactNode; // What to display in the header
-    sortable?: boolean; // Is this column sortable?
-    className?: string; // Custom classes for the <td> cells in this column
-    columnClassName?: string; // Custom classes for the <th> header cell
-    render?: (row: Record<string, any>) => ReactNode; // Custom render function for the cell
+  key: string;
+  title: string;
+  render?: (row: any) => React.ReactNode;
+  sortable?: boolean;
+  columnClassName?: string;
 }
 
-// Defines the props for the main table component
+export interface TablePagination {
+  current_page: number;
+  per_page: number;
+  total: number;
+}
+
 export interface BasicTableDataProps {
-    columns: TableHeader[];
-    data: Array<Record<string, any>>;
-    isLoading?: boolean;
-    useNumbering?: boolean;
-    pagination?: {
-        current_page: number;
-        per_page: number;
-        total: number;
-    };
-    onPageChange?: (newPage: number) => void;
+  columns: TableHeader[];
+  data: any[];
+  isLoading?: boolean;
+  useNumbering?: boolean;
+  pagination?: TablePagination;
+  onPageChange?: (page: number) => void;
+  buttons?: React.ReactNode;
 }

@@ -17,6 +17,16 @@ class HarvestTypeService {
     ): ApiResponse<HarvestTypeResponse["list"]> {
         return await http.get("/api/harvest-types", { signal, params });
     }
+
+    static async createHarvestType(
+        data: { name: string },
+    ): ApiResponse<HarvestTypeResponse["detail"]> {
+        return await http.post("/api/harvest-types", data);
+    }
+
+    static async deleteHarvestType(name: string): ApiResponse<boolean> {
+        return await http.delete(`/api/harvest-types/${name}`);
+    }
 }
 
 export default HarvestTypeService;

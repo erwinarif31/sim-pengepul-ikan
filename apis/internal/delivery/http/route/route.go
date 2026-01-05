@@ -41,13 +41,19 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 	c.App.Get("/api/bagang", c.BagangController.Search)
 
-	c.App.Get("/api/sales", c.SalesController.Search)
+		c.App.Get("/api/sales", c.SalesController.Search)
 
+	
 
+		c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
 
-	c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
+		c.App.Post("/api/harvest-types", c.MasterDataController.CreateHarvestType)
 
-	c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
+		c.App.Delete("/api/harvest-types/:name", c.MasterDataController.DeleteHarvestType)
+
+	
+
+		c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
 
 		c.App.Get("/api/workers", c.MasterDataController.SearchWorkers)
 
