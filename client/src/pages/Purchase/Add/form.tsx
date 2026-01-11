@@ -26,9 +26,9 @@ export default function HasilPanenForm() {
         console.log("Selected value:", value);
     };
 
-    const handleTextareaChange = (value: string) => {
-        setMessage(value);
-        console.log("Message:", value);
+    const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setMessage(e.target.value);
+        console.log("Message:", e.target.value);
     };
     return (
         <ComponentCard title="Tambah Hasil Panen">

@@ -1,8 +1,9 @@
 import { Route, Routes } from "react-router-dom";
 import AppLayout from "./layout/AppLayout";
 import DashboardPage from "./pages/Dashboard/dashboard";
+import PurchasePage from "./pages/Purchase/page";
+import DetailPurchasePage from "./pages/Purchase/Detail/page";
 import SalesPage from "./pages/Sales/page";
-import AddSalesPage from "./pages/Sales/Add/page";
 import DetailSalesPage from "./pages/Sales/Detail/page";
 import BagangPage from "./pages/Bagang/page";
 import SeasonPage from "./pages/Season/page";
@@ -25,10 +26,13 @@ function App() {
                 <Route path="/pekerja" element={<WorkerPage />} />
                 <Route path="/pemilik" element={<WorkerPage />} />
 
-                {/* Sales */}
-                <Route path="/pembelian" element={<SalesPage />} />
-                <Route path="/pembelian/tambah" element={<AddSalesPage />} />
-                <Route path="/pembelian/:id" element={<DetailSalesPage />} />
+                {/* Pembelian (Purchase from Bagang) */}
+                <Route path="/pembelian" element={<PurchasePage />} />
+                <Route path="/pembelian/:id" element={<DetailPurchasePage />} />
+
+                {/* Penjualan (Sales to Customer) */}
+                <Route path="/penjualan" element={<SalesPage />} />
+                <Route path="/penjualan/:id" element={<DetailSalesPage />} />
             </Route>
         </Routes>
     );

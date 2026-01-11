@@ -1,24 +1,16 @@
-import React from "react";
 import PageBreadcrumb from "../../component/common/PageBreadCrumb";
 import PageMeta from "../../component/common/PageMeta";
-import { useParams } from "react-router-dom";
 import SalesTable from "./table";
 
-const BagangHarvestPage: React.FC = () => {
-    const { id } = useParams();
-
+export default function SalesPage() {
     return (
         <>
             <PageMeta
-                title="Pembelian"
-                description=""
+                title="Catchery | Penjualan"
+                description="Dashboard Catchery"
             />
-            <PageBreadcrumb pageTitle="Pembelian" />
-            <div className="space-y-6">
-                <SalesTable />
-            </div>
+            <PageBreadcrumb pageTitle="Penjualan" />
+            <SalesTable />
         </>
     );
-};
-
-export default BagangHarvestPage;
+}
