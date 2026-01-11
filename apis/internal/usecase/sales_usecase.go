@@ -41,10 +41,10 @@ func NewSalesUseCase(
 	}
 }
 
-func (c *SalesUseCase) Search(ctx context.Context) ([]model.SalesResponse, error) {
+func (c *SalesUseCase) Search(ctx context.Context, request *model.SearchSalesRequest) ([]model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Preload("SalesDetails").Preload("TransactionDetails")
 
-	sales, err := c.SalesRepository.Search(tx)
+	sales, err := c.SalesRepository.Search(tx, request)
 	if err != nil {
 		c.Log.WithError(err).Error("error searching sales")
 		return nil, fiber.ErrInternalServerError

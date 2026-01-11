@@ -20,3 +20,8 @@ type BagangCreateRequest struct {
 	OwnerID    string `json:"owner_id"    validate:"uuid"`
 	OwnerName  string `json:"owner_name"  validate:"max=255"`
 }
+
+type SearchBagangRequest struct {
+	Name     string `query:"name"`
+	IsActive *bool  `query:"is_active"`
+}

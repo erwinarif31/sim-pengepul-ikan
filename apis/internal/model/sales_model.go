@@ -43,3 +43,8 @@ type CreateSalesItemRequest struct {
 type CreatePaymentRequest struct {
 	Amount int `json:"amount" validate:"required,min=1"`
 }
+
+type SearchSalesRequest struct {
+	Customer  string `query:"customer"`
+	IsPaidOff *bool  `query:"is_paid_off"`
+}

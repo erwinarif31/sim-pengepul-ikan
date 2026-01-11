@@ -23,7 +23,12 @@ func NewSalesController(
 }
 
 func (c *SalesController) Search(ctx *fiber.Ctx) error {
-	responses, err := c.SalesUseCase.Search(ctx.UserContext())
+	request := new(model.SearchSalesRequest)
+	if err := ctx.QueryParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+
+	responses, err := c.SalesUseCase.Search(ctx.UserContext(), request)
 	if err != nil {
 		return err
 	}

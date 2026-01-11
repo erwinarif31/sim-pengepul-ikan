@@ -72,12 +72,29 @@ func (c *BagangController) FindById(ctx *fiber.Ctx) error {
 }
 
 func (c *BagangController) Search(ctx *fiber.Ctx) error {
-	responses, err := c.BagangUseCase.Search(ctx.UserContext())
+
+	request := new(model.SearchBagangRequest)
+
+	if err := ctx.QueryParser(request); err != nil {
+
+		return fiber.ErrBadRequest
+
+	}
+
+
+
+	responses, err := c.BagangUseCase.Search(ctx.UserContext(), request)
+
 	if err != nil {
+
 		return err
+
 	}
 
 	return ctx.JSON(model.WebResponse[[]model.BagangResponse]{
+
 		Data: responses,
+
 	})
+
 }

@@ -132,11 +132,11 @@ func (b *BagangUseCase) FindById(ctx context.Context, id string) (*model.BagangR
 	return converter.BagangToResponse(bagang), nil
 }
 
-func (b *BagangUseCase) Search(ctx context.Context) ([]model.BagangResponse, error) {
+func (b *BagangUseCase) Search(ctx context.Context, request *model.SearchBagangRequest) ([]model.BagangResponse, error) {
 	tx := b.DB.WithContext(ctx).Preload("Worker").Preload("Owner")
 
-	var bagangs []entity.Bagang
-	if err := b.BagangRepository.FindAll(tx, &bagangs); err != nil {
+	bagangs, err := b.BagangRepository.Search(tx, request)
+	if err != nil {
 		b.Log.WithError(err).Error("error finding bagangs")
 		return nil, fiber.ErrInternalServerError
 	}

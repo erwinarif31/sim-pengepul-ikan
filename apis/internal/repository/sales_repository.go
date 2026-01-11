@@ -17,9 +17,18 @@ func NewSalesRepository(log *logrus.Logger) *SalesRepository {
 	}
 }
 
-func (r *SalesRepository) Search(db *gorm.DB) ([]entity.Sales, error) {
+func (r *SalesRepository) Search(db *gorm.DB, request *model.SearchSalesRequest) ([]entity.Sales, error) {
 	var sales []entity.Sales
-	if err := db.Find(&sales).Error; err != nil {
+	query := db.Model(&entity.Sales{})
+
+	if request.Customer != "" {
+		query = query.Where("customer ILIKE ?", "%"+request.Customer+"%")
+	}
+	if request.IsPaidOff != nil {
+		query = query.Where("is_paid_off = ?", *request.IsPaidOff)
+	}
+
+	if err := query.Find(&sales).Error; err != nil {
 		return nil, err
 	}
 	return sales, nil
