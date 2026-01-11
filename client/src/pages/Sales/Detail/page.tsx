@@ -1,290 +1,190 @@
 import { useState } from "react";
-import BasicTableData from "../../../component/table/BasicTableData";
-import type { TableHeader } from "../../../component/table/types";
-import useHarvestsQuery from "../../../features/harvest/hooks/useHarvestsQuery";
-import useProductionCostsQuery from "../../../features/production-cost/hooks/useProductionCostsQuery";
 import { useParams, Link } from "react-router-dom";
+import BasicTableData from "../../../component/table/BasicTableData";
 import Button from "../../../component/ui/button/Button";
 import { ChevronLeftIcon, PencilIcon, TrashBinIcon } from "../../../icons";
-import useCreateHarvestMutation from "../../../features/harvest/hooks/useCreateHarvestMutation";
-import useUpdateHarvestMutation from "../../../features/harvest/hooks/useUpdateHarvestMutation";
-import useDeleteHarvestMutation from "../../../features/harvest/hooks/useDeleteHarvestMutation";
-import useCreateProductionCostMutation from "../../../features/production-cost/hooks/useCreateProductionCostMutation";
-import useUpdateProductionCostMutation from "../../../features/production-cost/hooks/useUpdateProductionCostMutation";
-import useDeleteProductionCostMutation from "../../../features/production-cost/hooks/useDeleteProductionCostMutation";
-import HarvestFormModal from "./HarvestFormModal";
-import ProductionCostFormModal from "./ProductionCostFormModal";
-import { HarvestProps } from "../../../features/harvest/api/harvest.type";
-import { ProductionCostProps } from "../../../features/production-cost/api/production-cost.type";
+import useSalesDetailQuery from "../../../features/sales/hooks/useSalesDetailQuery";
+import useAddSalesItemMutation from "../../../features/sales/hooks/useAddSalesItemMutation";
+import useUpdateSalesItemMutation from "../../../features/sales/hooks/useUpdateSalesItemMutation";
+import useDeleteSalesItemMutation from "../../../features/sales/hooks/useDeleteSalesItemMutation";
+import useAddPaymentMutation from "../../../features/sales/hooks/useAddPaymentMutation";
+import useUpdatePaymentMutation from "../../../features/sales/hooks/useUpdatePaymentMutation";
+import useDeletePaymentMutation from "../../../features/sales/hooks/useDeletePaymentMutation";
+import AddItemModal from "./AddItemModal";
+import AddPaymentModal from "./AddPaymentModal";
+import type { TableHeader } from "../../../component/table/types";
+import toast from "react-hot-toast";
 
 const DetailSalesPage = () => {
     const { id } = useParams<{ id: string }>();
-    const bagangId = id || "";
-    const [activeTab, setActiveTab] = useState<"harvest" | "cost">("harvest");
+    const salesId = id || "";
 
-    const [isHarvestModalOpen, setIsHarvestModalOpen] = useState(false);
-    const [editingHarvest, setEditingHarvest] = useState<HarvestProps | null>(null);
+    const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<any | null>(null);
+    const [editingPayment, setEditingPayment] = useState<any | null>(null);
 
-    const [isCostModalOpen, setIsCostModalOpen] = useState(false);
-    const [editingCost, setEditingCost] = useState<ProductionCostProps | null>(null);
+    const { data: response, isLoading } = useSalesDetailQuery(salesId);
+    const salesData = response?.data?.data;
 
-    const { data: harvestResponse, isLoading: isLoadingHarvests } =
-        useHarvestsQuery(bagangId);
-    const { data: costResponse, isLoading: isLoadingCosts } =
-        useProductionCostsQuery(bagangId);
+    const { mutate: addItem, isPending: isAddingItem } = useAddSalesItemMutation();
+    const { mutate: updateItem, isPending: isUpdatingItem } = useUpdateSalesItemMutation();
+    const { mutate: deleteItem } = useDeleteSalesItemMutation();
 
-    const { mutate: createHarvest, isPending: isCreatingHarvest } =
-        useCreateHarvestMutation();
-    const { mutate: updateHarvest, isPending: isUpdatingHarvest } =
-        useUpdateHarvestMutation();
-    const { mutate: deleteHarvest } = useDeleteHarvestMutation();
+    const { mutate: addPayment, isPending: isAddingPayment } = useAddPaymentMutation();
+    const { mutate: updatePayment, isPending: isUpdatingPayment } = useUpdatePaymentMutation();
+    const { mutate: deletePayment } = useDeletePaymentMutation();
 
-    const { mutate: createCost, isPending: isCreatingCost } =
-        useCreateProductionCostMutation();
-    const { mutate: updateCost, isPending: isUpdatingCost } =
-        useUpdateProductionCostMutation();
-    const { mutate: deleteCost } = useDeleteProductionCostMutation();
-
-    const handleCreateHarvest = (data: any) => {
-        createHarvest(
-            { ...data, bagang_id: bagangId },
-            {
-                onSuccess: () => setIsHarvestModalOpen(false),
-            },
-        );
-    };
-
-    const handleUpdateHarvest = (data: any) => {
-        if (editingHarvest) {
-            updateHarvest(
-                { id: editingHarvest.id, data },
-                {
-                    onSuccess: () => setIsHarvestModalOpen(false),
+    const handleItemSubmit = (data: any) => {
+        if (editingItem) {
+            updateItem({ id: editingItem.id, data }, {
+                onSuccess: () => {
+                    setIsItemModalOpen(false);
+                    toast.success("Item diubah");
                 },
-            );
-        }
-    };
-
-    const handleDeleteHarvest = (id: string) => {
-        if (confirm("Apakah anda yakin ingin menghapus data panen ini?")) {
-            deleteHarvest(id);
-        }
-    };
-
-    const handleCreateCost = (data: any) => {
-        createCost(
-            { ...data, bagang_id: bagangId },
-            {
-                onSuccess: () => setIsCostModalOpen(false),
-            },
-        );
-    };
-
-    const handleUpdateCost = (data: any) => {
-        if (editingCost) {
-            updateCost(
-                { id: editingCost.id, data },
-                {
-                    onSuccess: () => setIsCostModalOpen(false),
+                onError: () => {
+                    toast.error("Gagal mengubah");
                 },
-            );
+            });
+        } else {
+            addItem({ id: salesId, data }, {
+                onSuccess: () => {
+                    setIsItemModalOpen(false);
+                    toast.success("Item ditambahkan");
+                },
+                onError: () => {
+                    toast.error("Gagal menambahkan");
+                },
+            });
         }
     };
 
-    const handleDeleteCost = (id: string) => {
-        if (confirm("Apakah anda yakin ingin menghapus data pengeluaran ini?")) {
-            deleteCost(id);
+    const handleDeleteItem = (id: number) => {
+        if (confirm("Hapus item ini?")) {
+            deleteItem(id, {
+                onSuccess: () => toast.success("Item dihapus"),
+                onError: () => toast.error("Gagal menghapus"),
+            });
         }
     };
 
-    const openCreateHarvestModal = () => {
-        setEditingHarvest(null);
-        setIsHarvestModalOpen(true);
+    const handlePaymentSubmit = (data: any) => {
+        if (editingPayment) {
+            updatePayment({ id: editingPayment.id, data }, {
+                onSuccess: () => {
+                    setIsPaymentModalOpen(false);
+                    toast.success("Pembayaran diubah");
+                },
+                onError: () => {
+                    toast.error("Gagal mengubah");
+                },
+            });
+        } else {
+            addPayment({ id: salesId, data }, {
+                onSuccess: () => {
+                    setIsPaymentModalOpen(false);
+                    toast.success("Pembayaran ditambahkan");
+                },
+                onError: () => {
+                    toast.error("Gagal menambahkan");
+                },
+            });
+        }
     };
 
-    const openEditHarvestModal = (harvest: HarvestProps) => {
-        setEditingHarvest(harvest);
-        setIsHarvestModalOpen(true);
+    const handleDeletePayment = (id: number) => {
+        if (confirm("Hapus pembayaran ini?")) {
+            deletePayment(id, {
+                onSuccess: () => toast.success("Pembayaran dihapus"),
+                onError: () => toast.error("Gagal menghapus"),
+            });
+        }
     };
 
-    const openCreateCostModal = () => {
-        setEditingCost(null);
-        setIsCostModalOpen(true);
-    };
+    const openAddItem = () => { setEditingItem(null); setIsItemModalOpen(true); };
+    const openEditItem = (item: any) => { setEditingItem(item); setIsItemModalOpen(true); };
 
-    const openEditCostModal = (cost: ProductionCostProps) => {
-        setEditingCost(cost);
-        setIsCostModalOpen(true);
-    };
+    const openAddPayment = () => { setEditingPayment(null); setIsPaymentModalOpen(true); };
+    const openEditPayment = (payment: any) => { setEditingPayment(payment); setIsPaymentModalOpen(true); };
 
-    const harvestColumns: TableHeader[] = [
-        {
-            key: "harvest_date",
-            title: "Tanggal",
-            render: (row) => new Date(row.harvest_date).toLocaleDateString("id-ID"),
-        },
+    const itemColumns: TableHeader[] = [
+        { key: "harvest_types", title: "Jenis Ikan" },
         { key: "weight", title: "Berat (kg)" },
+        { key: "price", title: "Harga", render: (row) => `Rp ${row.price.toLocaleString("id-ID")}` },
+        { key: "subtotal", title: "Subtotal", render: (row) => `Rp ${row.subtotal.toLocaleString("id-ID")}` },
         {
-            key: "price",
-            title: "Harga",
-            render: (row) => `Rp ${row.price.toLocaleString("id-ID")}`,
-        },
-        {
-            key: "total",
-            title: "Total",
-            render: (row) =>
-                `Rp ${(row.weight * row.price).toLocaleString("id-ID")}`,
-        },
-        { key: "harvest_type", title: "Jenis Ikan" },
-        {
-            key: "actions",
-            title: "Aksi",
-            render: (row) => (
+            key: "actions", title: "Aksi", render: (row) => (
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => openEditHarvestModal(row)}
-                        className="text-blue-500 hover:text-blue-700"
-                    >
-                        <PencilIcon className="size-5" />
-                    </button>
-                    <button
-                        onClick={() => handleDeleteHarvest(row.id)}
-                        className="text-red-500 hover:text-red-700"
-                    >
-                        <TrashBinIcon className="size-5" />
-                    </button>
+                    <button onClick={() => openEditItem(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
+                    <button onClick={() => handleDeleteItem(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
-            ),
-        },
+            )
+        }
     ];
 
-    const costColumns: TableHeader[] = [
+    const paymentColumns: TableHeader[] = [
+        { key: "paid_at", title: "Tanggal", render: (row) => new Date(row.paid_at).toLocaleDateString("id-ID") },
+        { key: "amount", title: "Jumlah", render: (row) => `Rp ${row.amount.toLocaleString("id-ID")}` },
         {
-            key: "created_at",
-            title: "Tanggal",
-            render: (row) => new Date(row.created_at).toLocaleDateString("id-ID"),
-        },
-        { key: "production_costs_type", title: "Jenis Pengeluaran" },
-        {
-            key: "price",
-            title: "Harga",
-            render: (row) => `Rp ${row.price.toLocaleString("id-ID")}`,
-        },
-        {
-            key: "actions",
-            title: "Aksi",
-            render: (row) => (
+            key: "actions", title: "Aksi", render: (row) => (
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => openEditCostModal(row)}
-                        className="text-blue-500 hover:text-blue-700"
-                    >
-                        <PencilIcon className="size-5" />
-                    </button>
-                    <button
-                        onClick={() => handleDeleteCost(row.id)}
-                        className="text-red-500 hover:text-red-700"
-                    >
-                        <TrashBinIcon className="size-5" />
-                    </button>
+                    <button onClick={() => openEditPayment(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
+                    <button onClick={() => handleDeletePayment(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
-            ),
-        },
+            )
+        }
     ];
+
+    if (isLoading) return <div>Loading...</div>;
+    if (!salesData) return <div>Data not found</div>;
+
+    const remaining = (salesData.total_amount || 0) - (salesData.total_paid || 0);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link to="/pembelian">
-                        <Button variant="outline" size="sm">
-                            <ChevronLeftIcon className="w-5 h-5" />
-                            Kembali
-                        </Button>
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-                        Detail Pembelian
-                    </h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Detail Penjualan #{salesData.id}</h1>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${salesData.is_paid_off ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                        {salesData.is_paid_off ? "LUNAS" : "BELUM LUNAS"}
+                    </span>
                 </div>
-                <div>
-                    {activeTab === "harvest" ? (
-                        <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={openCreateHarvestModal}
-                        >
-                            Tambah Panen
-                        </Button>
-                    ) : (
-                        <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={openCreateCostModal}
-                        >
-                            Tambah Pengeluaran
-                        </Button>
-                    )}
+                <Link to="/penjualan"><Button variant="outline" size="sm"><ChevronLeftIcon className="w-5 h-5" />Kembali</Button></Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <p className="text-sm text-gray-500">Customer</p>
+                    <p className="text-lg font-semibold">{salesData.customer}</p>
+                </div>
+                <div className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <p className="text-sm text-gray-500">Total Tagihan</p>
+                    <p className="text-lg font-semibold">Rp {salesData.total_amount?.toLocaleString("id-ID") || 0}</p>
+                </div>
+                <div className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <p className="text-sm text-gray-500">Sisa Tagihan</p>
+                    <p className="text-lg font-semibold text-red-500">Rp {remaining.toLocaleString("id-ID")}</p>
                 </div>
             </div>
 
-            <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8">
-                    <button
-                        onClick={() => setActiveTab("harvest")}
-                        className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === "harvest"
-                                ? "border-brand-500 text-brand-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                    >
-                        Hasil Panen
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("cost")}
-                        className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === "cost"
-                                ? "border-brand-500 text-brand-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                    >
-                        Pengeluaran
-                    </button>
-                </nav>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Rincian Barang</h2>
+                    <Button size="sm" onClick={openAddItem}>Tambah Barang</Button>
+                </div>
+                <BasicTableData columns={itemColumns} data={salesData.sales_details || []} useNumbering />
             </div>
 
-            {activeTab === "harvest" ? (
-                <>
-                    <BasicTableData
-                        columns={harvestColumns}
-                        data={harvestResponse?.data?.data || []}
-                        isLoading={isLoadingHarvests}
-                        useNumbering
-                    />
-                    <HarvestFormModal
-                        isOpen={isHarvestModalOpen}
-                        onClose={() => setIsHarvestModalOpen(false)}
-                        onSubmit={editingHarvest ? handleUpdateHarvest : handleCreateHarvest}
-                        initialData={editingHarvest}
-                        isLoading={isCreatingHarvest || isUpdatingHarvest}
-                    />
-                </>
-            ) : (
-                <>
-                    <BasicTableData
-                        columns={costColumns}
-                        data={costResponse?.data?.data || []}
-                        isLoading={isLoadingCosts}
-                        useNumbering
-                    />
-                    <ProductionCostFormModal
-                        isOpen={isCostModalOpen}
-                        onClose={() => setIsCostModalOpen(false)}
-                        onSubmit={editingCost ? handleUpdateCost : handleCreateCost}
-                        initialData={editingCost}
-                        isLoading={isCreatingCost || isUpdatingCost}
-                    />
-                </>
-            )}
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
+                    <Button size="sm" onClick={openAddPayment}>Tambah Pembayaran</Button>
+                </div>
+                <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
+            </div>
+
+            <AddItemModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSubmit={handleItemSubmit} isLoading={isAddingItem || isUpdatingItem} initialData={editingItem} />
+            <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} onSubmit={handlePaymentSubmit} isLoading={isAddingPayment || isUpdatingPayment} maxAmount={remaining + (editingPayment ? editingPayment.amount : 0)} initialData={editingPayment} />
         </div>
     );
 };

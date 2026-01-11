@@ -17,8 +17,8 @@ export default function TaskHeader() {
     { name: "In Progress", key: "InProgress", count: 4 },
     { name: "Completed", key: "Completed", count: 4 },
   ];
-  const handleMessageChange = (value: string) => {
-    setMessage(value);
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
   };
   return (
     <>

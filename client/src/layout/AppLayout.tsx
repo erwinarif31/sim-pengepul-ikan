@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
+import { Toaster } from "react-hot-toast";
 
 const LayoutContent: React.FC = () => {
     const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -22,6 +23,44 @@ const LayoutContent: React.FC = () => {
                     <Outlet />
                 </div>
             </div>
+            <Toaster
+                position="top-right"
+                reverseOrder={false}
+                containerStyle={{
+                    zIndex: 999999,
+                }}
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        fontSize: "16px",
+                        fontWeight: "500",
+                        padding: "16px 24px",
+                        borderRadius: "12px",
+                        maxWidth: "500px",
+                        minWidth: "300px",
+                    },
+                    success: {
+                        style: {
+                            background: "#10B981",
+                            color: "#fff",
+                        },
+                        iconTheme: {
+                            primary: "#fff",
+                            secondary: "#10B981",
+                        },
+                    },
+                    error: {
+                        style: {
+                            background: "#EF4444",
+                            color: "#fff",
+                        },
+                        iconTheme: {
+                            primary: "#fff",
+                            secondary: "#EF4444",
+                        },
+                    },
+                }}
+            />
         </div>
     );
 };
