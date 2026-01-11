@@ -9,7 +9,8 @@ type Sales struct {
 	IsPaidOff bool       `gorm:"column:is_paid_off"`
 	PaidOffAt *time.Time `gorm:"column:paid_off_at"`
 
-	SalesDetails []SalesDetail `gorm:"foreignKey:SalesID;references:ID"`
+	SalesDetails       []SalesDetail       `gorm:"foreignKey:SalesID;references:ID"`
+	TransactionDetails []TransactionDetail `gorm:"foreignKey:SalesID;references:ID"`
 }
 
 type SalesDetail struct {

@@ -41,21 +41,37 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 	// c.App.Post("/api/users/_login", c.UserController.Login)
 
-	c.App.Post("/api/bagang", c.BagangController.Create)
+		c.App.Post("/api/bagang", c.BagangController.Create)
 
-	c.App.Put("/api/bagang/:id", c.BagangController.Update)
+		c.App.Put("/api/bagang/:id", c.BagangController.Update)
 
-	c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
+		c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
 
-	c.App.Get("/api/bagang/:id", c.BagangController.FindById)
+		c.App.Get("/api/bagang/:id", c.BagangController.FindById)
 
-	c.App.Get("/api/bagang", c.BagangController.Search)
+		c.App.Get("/api/bagang", c.BagangController.Search)
 
-	c.App.Get("/api/sales", c.SalesController.Search)
+	
 
+		c.App.Get("/api/sales", c.SalesController.Search)
 
+			c.App.Get("/api/sales/:id", c.SalesController.FindById)
 
-	c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
+			c.App.Post("/api/sales/:id/items", c.SalesController.AddSalesItem)
+
+			c.App.Put("/api/sales/items/:id", c.SalesController.UpdateSalesItem)
+
+			c.App.Delete("/api/sales/items/:id", c.SalesController.DeleteSalesItem)
+
+			c.App.Post("/api/sales/:id/payments", c.SalesController.AddPayment)
+
+			c.App.Put("/api/sales/payments/:id", c.SalesController.UpdatePayment)
+
+			c.App.Delete("/api/sales/payments/:id", c.SalesController.DeletePayment)
+
+		
+
+			c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
 
 	c.App.Post("/api/harvest-types", c.MasterDataController.CreateHarvestType)
 

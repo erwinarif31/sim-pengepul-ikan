@@ -31,3 +31,103 @@ func (c *SalesController) Search(ctx *fiber.Ctx) error {
 		Data: responses,
 	})
 }
+
+func (c *SalesController) FindById(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.FindById(ctx.UserContext(), id)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) AddSalesItem(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	request := new(model.CreateSalesItemRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.AddSalesItem(ctx.UserContext(), id, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) AddPayment(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	request := new(model.CreatePaymentRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.AddPayment(ctx.UserContext(), id, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) UpdateSalesItem(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	request := new(model.CreateSalesItemRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.UpdateSalesItem(ctx.UserContext(), id, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) DeleteSalesItem(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.DeleteSalesItem(ctx.UserContext(), id)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) UpdatePayment(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	request := new(model.CreatePaymentRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.UpdatePayment(ctx.UserContext(), id, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
+func (c *SalesController) DeletePayment(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.DeletePayment(ctx.UserContext(), id)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
