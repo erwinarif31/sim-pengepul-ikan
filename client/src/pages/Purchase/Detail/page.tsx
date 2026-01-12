@@ -209,7 +209,11 @@ const DetailSalesPage = () => {
             key: "creator_role",
             title: "Dilakukan oleh",
             render: (row) => {
-                const role = row.creator_role === "owner" ? "Pemilik" : row.creator_role === "worker" ? "Pekerja" : "-";
+                let role = "-";
+                if (row.creator_role === "owner") role = "Pemilik";
+                else if (row.creator_role === "worker") role = "Pekerja";
+                else if (row.creator_role === "both") role = "Umum";
+                
                 return row.created_by_name ? `${role} - ${row.created_by_name}` : role;
             },
         },

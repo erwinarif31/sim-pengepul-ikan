@@ -52,8 +52,9 @@ export default function ProductionCostFormModal({
         const isSamePerson = bagang.worker_id === bagang.owner_id;
 
         if (isSamePerson) {
-             options.push({ value: "worker", label: `Pekerja & Pemilik - ${bagang.worker_name}` });
+             options.push({ value: "both", label: `Umum - ${bagang.worker_name}` });
         } else {
+             options.push({ value: "both", label: "Umum" });
              if (bagang.worker_id) {
                  options.push({ value: "worker", label: `Pekerja - ${bagang.worker_name}` });
              }
@@ -81,19 +82,13 @@ export default function ProductionCostFormModal({
                 reset({
                     production_costs_type: initialData.production_costs_type,
                     price: initialData.price.toString() as any,
-                    creator_role: initialData.creator_role || "worker",
+                    creator_role: initialData.creator_role || "both",
                 });
             } else {
-                // Default selection logic
-                let defaultRole = "worker";
-                if (bagang && bagang.worker_id === bagang.owner_id) {
-                    defaultRole = "worker"; // Default to worker if same person
-                }
-                
                 reset({
                     production_costs_type: "",
                     price: "" as any,
-                    creator_role: defaultRole,
+                    creator_role: "both",
                 });
             }
         }
