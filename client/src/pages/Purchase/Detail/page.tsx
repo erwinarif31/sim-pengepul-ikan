@@ -324,6 +324,7 @@ const DetailSalesPage = () => {
                         onSubmit={editingCost ? handleUpdateCost : handleCreateCost}
                         initialData={editingCost}
                         isLoading={isCreatingCost || isUpdatingCost}
+                        bagang={bagang}
                     />
                 </>
             )}
