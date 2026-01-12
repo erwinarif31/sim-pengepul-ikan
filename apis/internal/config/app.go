@@ -86,6 +86,7 @@ func Bootstrap(config *BootstrapConfig) {
 		config.Log,
 		productionCostRepository,
 		seasonRepository,
+		bagangRepository,
 	)
 	customerUseCase := usecase.NewCustomerUseCase(
 		config.DB,

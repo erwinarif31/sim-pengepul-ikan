@@ -18,6 +18,7 @@ type ProductionCostUseCase struct {
 	Log                      *logrus.Logger
 	ProductionCostRepository *repository.ProductionCostRepository
 	SeasonRepository         *repository.SeasonRepository
+	BagangRepository         *repository.BagangRepository
 }
 
 func NewProductionCostUseCase(
@@ -25,12 +26,14 @@ func NewProductionCostUseCase(
 	log *logrus.Logger,
 	productionCostRepository *repository.ProductionCostRepository,
 	seasonRepository *repository.SeasonRepository,
+	bagangRepository *repository.BagangRepository,
 ) *ProductionCostUseCase {
 	return &ProductionCostUseCase{
 		DB:                       db,
 		Log:                      log,
 		ProductionCostRepository: productionCostRepository,
 		SeasonRepository:         seasonRepository,
+		BagangRepository:         bagangRepository,
 	}
 }
 
@@ -44,6 +47,27 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 		return nil, fiber.NewError(fiber.StatusBadRequest, "No active season found")
 	}
 
+	bagang := new(entity.Bagang)
+	if err := c.BagangRepository.FindById(tx, bagang, request.BagangID); err != nil {
+		c.Log.WithError(err).Error("error finding bagang")
+		return nil, fiber.ErrNotFound
+	}
+
+	var createdBy *string
+	var createdByName *string
+
+	if request.CreatorRole == "worker" {
+		createdBy = &bagang.WorkerID
+		if bagang.Worker != nil {
+			createdByName = &bagang.Worker.Name
+		}
+	} else if request.CreatorRole == "owner" {
+		createdBy = &bagang.OwnerID
+		if bagang.Owner != nil {
+			createdByName = &bagang.Owner.Name
+		}
+	}
+
 	entity := &entity.ProductionCost{
 		ID:                    uuid.New().String(),
 		BagangID:              request.BagangID,
@@ -51,6 +75,8 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 		Price:                 request.Price,
 		ProductionCostsSeason: activeSeason.ID,
 		CreatorRole:           request.CreatorRole,
+		CreatedBy:             createdBy,
+		CreatedByName:         createdByName,
 	}
 
 	if err := c.ProductionCostRepository.Create(tx, entity); err != nil {
