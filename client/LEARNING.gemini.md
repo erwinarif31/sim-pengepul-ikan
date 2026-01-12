@@ -31,7 +31,7 @@
     *   **UI Tweaks:** Moved "Kembali" buttons to the right side of headers.
     *   **Search & Filter UI:** Added Search (Debounced Input) and Filter (Select) components to `SalesTable` and `BagangTable`, wired to backend search endpoints.
     *   **Customer Feature:** Implemented full Master Data management for Customers (Pelanggan), integrated into Sales creation.
-    *   **Production Cost Role:** Added "Worker vs Owner" distinction for production costs.
+    *   **Production Cost Role:** Added "Worker vs Owner" and "Joint" distinction for production costs.
 
 ## How to Add a New Feature (Frontend)
 
@@ -252,3 +252,47 @@ The Production Cost feature now accurately attributes costs to specific individu
 ### 3. Fixes
 -   **Missing Prop:** Fixed a bug where the `bagang` prop was not being passed to `ProductionCostFormModal` in the Purchase Detail page, causing the "Dilakukan oleh" dropdown to be empty.
 -   **ReferenceError:** Fixed a regression where `useBagangDetailQuery` import and `bagang` variable definition were accidentally lost during previous refactoring, causing a runtime error in the Purchase Detail page.
+
+# Learning Log - Joint Production Cost
+
+## Context
+The user requested a way to attribute production costs to *both* the Worker and the Owner simultaneously ("Ditanggung Bersama"). This is important for costs shared between parties.
+
+## Changes
+
+### 1. Backend
+-   **Model:** Updated validation for `CreateProductionCostRequest` to accept `creator_role: "both"`.
+-   **UseCase:** Updated `ProductionCostUseCase.Create` logic.
+    -   If role is "both", `CreatedBy` (ID) is left `nil` (since it's not a single person).
+    -   `CreatedByName` is constructed by combining the Worker's Name and Owner's Name (e.g., "Budi & Pak Bos").
+
+### 2. Frontend
+-   **Modal:** Updated `ProductionCostFormModal` to include a "Ditanggung Bersama" option in the "Dilakukan oleh" dropdown (only if Worker and Owner are different people).
+-   **Table:** Updated the `creator_role` renderer in the Production Cost table to display "Ditanggung Bersama" correctly.
+
+## Outcome
+Users can now record production costs that are shared/covered by both parties, with the system correctly recording and displaying the combined attribution.
+
+# Learning Log - Refined Shared Production Costs
+
+## Context
+The user requested semantic changes to the "Shared Production Cost" feature:
+1.  **Terminology:** Rename "Ditanggung Bersama" to "Umum".
+2.  **Default Behavior:** Make "Umum" the default selection.
+3.  **Optimization:** If the Worker and Owner are the same person, simplify the selection to a single "Umum - [Name]" option that maps to the "both" role internally, avoiding redundancy.
+
+## Changes
+
+### 1. Frontend
+-   **Modal:**
+    -   Renamed label to "Umum".
+    -   Set default `creator_role` to `"both"`.
+    -   If `isSamePerson`, generates a single option `{ value: "both", label: "Umum - [Name]" }`.
+    -   If different, generates "Umum", "Pekerja", and "Pemilik" options.
+-   **Table:** Updated renderer to display "Umum" for `creator_role === "both"`.
+
+### 2. Backend
+-   **UseCase:** Refined `Create` logic to ensure `CreatedByName` does not duplicate the name (e.g., "Budi & Budi") when `creator_role` is "both" but the Worker and Owner are the same person.
+
+## Outcome
+The interface is now clearer ("Umum" is more standard) and streamlined, with smart handling for cases where the Worker and Owner are the same entity.
