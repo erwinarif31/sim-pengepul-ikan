@@ -49,11 +49,11 @@ type CreateProductionCostRequest struct {
 	BagangID           string `json:"bagang_id" validate:"required,uuid"`
 	ProductionCostType string `json:"production_costs_type" validate:"required"`
 	Price              int    `json:"price" validate:"required,min=0"`
-	CreatorRole        string `json:"creator_role" validate:"required,oneof=worker owner"`
+	CreatorRole        string `json:"creator_role" validate:"required,oneof=worker owner both"`
 }
 
 type UpdateProductionCostRequest struct {
 	ProductionCostType string `json:"production_costs_type"`
 	Price              int    `json:"price" validate:"min=0"`
-	CreatorRole        string `json:"creator_role" validate:"omitempty,oneof=worker owner"`
+	CreatorRole        string `json:"creator_role" validate:"omitempty,oneof=worker owner both"`
 }

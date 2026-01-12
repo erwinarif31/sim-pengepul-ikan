@@ -66,6 +66,19 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 		if bagang.Owner != nil {
 			createdByName = &bagang.Owner.Name
 		}
+	} else if request.CreatorRole == "both" {
+		// Both: No single creator ID
+		name := ""
+		if bagang.Worker != nil {
+			name += bagang.Worker.Name
+		}
+		if bagang.Owner != nil && (bagang.Worker == nil || bagang.OwnerID != bagang.WorkerID) {
+			if name != "" {
+				name += " & "
+			}
+			name += bagang.Owner.Name
+		}
+		createdByName = &name
 	}
 
 	entity := &entity.ProductionCost{
