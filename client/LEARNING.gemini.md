@@ -31,6 +31,7 @@
     *   **UI Tweaks:** Moved "Kembali" buttons to the right side of headers.
     *   **Search & Filter UI:** Added Search (Debounced Input) and Filter (Select) components to `SalesTable` and `BagangTable`, wired to backend search endpoints.
     *   **Customer Feature:** Implemented full Master Data management for Customers (Pelanggan), integrated into Sales creation.
+    *   **Production Cost Role:** Added "Worker vs Owner" distinction for production costs.
 
 ## How to Add a New Feature (Frontend)
 
@@ -204,3 +205,25 @@ The user requested a way to manage "Pelanggan" (Customer) master data and add da
 
 ## Outcome
 Users can now manage Customer data independently in the Master Data section or create new Customers directly while recording a new Sale, fulfilling the requirement for seamless data entry.
+
+# Learning Log - Production Cost Creator Role
+
+## Context
+The user requested to track *who* incurs a production cost (Worker or Owner) to facilitate future profit-sharing calculations. This data was previously missing or implicit.
+
+## Changes
+
+### 1. Database & Backend
+-   **Migration:** Added `creator_role` (VARCHAR) to `production_costs` table.
+-   **Logic:** Updated `ProductionCost` entity, model, and usecase to persist and retrieve this role.
+    -   `CreateProductionCostRequest` now requires `creator_role` ("worker" or "owner").
+    -   `ProductionCostResponse` includes `creator_role`.
+
+### 2. Frontend
+-   **Schema:** Updated `ProductionCostSchema` to include `creator_role`.
+-   **UI:**
+    -   **Form:** Added a "Pembuat" (Creator) select dropdown (Pekerja/Pemilik) to `ProductionCostFormModal`.
+    -   **Table:** Added a "Pembuat" column to the Production Cost table in the Purchase Detail view.
+
+## Outcome
+Production costs now explicitly state whether they were made by the Worker or the Owner, providing the necessary data foundation for accurate financial reporting and profit sharing.
