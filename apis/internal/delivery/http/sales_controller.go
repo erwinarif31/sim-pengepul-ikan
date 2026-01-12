@@ -49,6 +49,18 @@ func (c *SalesController) FindById(ctx *fiber.Ctx) error {
 	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
 }
 
+func (c *SalesController) Create(ctx *fiber.Ctx) error {
+	request := new(model.CreateSalesRequest)
+	if err := ctx.BodyParser(request); err != nil {
+		return fiber.ErrBadRequest
+	}
+	response, err := c.SalesUseCase.Create(ctx.UserContext(), request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(model.WebResponse[*model.SalesResponse]{Data: response})
+}
+
 func (c *SalesController) AddSalesItem(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {

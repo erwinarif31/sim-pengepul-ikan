@@ -19,6 +19,8 @@ type RouteConfig struct {
 
 	ProductionCostController *http.ProductionCostController
 
+	CustomerController       *http.CustomerController
+
 	// AuthMiddleware    fiber.Handler
 
 }
@@ -52,6 +54,8 @@ func (c *RouteConfig) SetupGuestRoute() {
 		c.App.Get("/api/bagang", c.BagangController.Search)
 
 	
+
+		c.App.Post("/api/sales", c.SalesController.Create)
 
 		c.App.Get("/api/sales", c.SalesController.Search)
 
@@ -140,6 +144,16 @@ func (c *RouteConfig) SetupGuestRoute() {
 		c.App.Delete("/api/production-costs/:id", c.ProductionCostController.Delete)
 
 
+
+		c.App.Post("/api/customers", c.CustomerController.Create)
+
+		c.App.Put("/api/customers/:id", c.CustomerController.Update)
+
+		c.App.Delete("/api/customers/:id", c.CustomerController.Delete)
+
+		c.App.Get("/api/customers/:id", c.CustomerController.FindById)
+
+		c.App.Get("/api/customers", c.CustomerController.Search)
 
 	}
 

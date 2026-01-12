@@ -36,6 +36,7 @@ func Bootstrap(config *BootstrapConfig) {
 	productionCostRepository := repository.NewProductionCostRepository(config.Log)
 	salesDetailRepository := repository.NewSalesDetailRepository(config.Log)
 	transactionDetailRepository := repository.NewTransactionDetailRepository(config.Log)
+	customerRepository := repository.NewCustomerRepository(config.Log)
 
 	// setup producer
 	// var userProducer *messaging.UserProducer
@@ -86,6 +87,12 @@ func Bootstrap(config *BootstrapConfig) {
 		productionCostRepository,
 		seasonRepository,
 	)
+	customerUseCase := usecase.NewCustomerUseCase(
+		config.DB,
+		config.Log,
+		config.Validate,
+		customerRepository,
+	)
 	// setup controller
 	// userController := http.NewUserController(userUseCase, config.Log)
 	// contactController := http.NewContactController(contactUseCase, config.Log)
@@ -95,6 +102,7 @@ func Bootstrap(config *BootstrapConfig) {
 	masterDataController := http.NewMasterDataController(config.Log, masterDataUseCase)
 	harvestController := http.NewHarvestController(config.Log, harvestUseCase)
 	productionCostController := http.NewProductionCostController(config.Log, productionCostUseCase)
+	customerController := http.NewCustomerController(config.Log, customerUseCase)
 
 	// setup middleware
 	// authMiddleware := middleware.NewAuth(userUseCase)
@@ -107,6 +115,7 @@ func Bootstrap(config *BootstrapConfig) {
 		MasterDataController:     masterDataController,
 		HarvestController:        harvestController,
 		ProductionCostController: productionCostController,
+		CustomerController:       customerController,
 	}
 	routeConfig.Setup()
 }

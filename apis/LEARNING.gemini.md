@@ -79,20 +79,28 @@ The project strictly follows separation of concerns:
 *   **Table:** `transaction_details`
 *   **Columns:** `id` (Serial), `sales_id` (FK), `amount`, `paid_at`.
 
+### Customer Domain (New Jan 2026)
+
+**9. Customers (Pelanggan)**
+*   **Table:** `customers`
+*   **Columns:** `id` (UUID), `name`, `contact`, `address`, `created_at`, `updated_at`.
+*   **Usage:** Master data for Sales.
+
 ## Current State (Jan 2026)
 *   **Active Features:** 
     *   **Bagang:** List and Create.
-    *   **Sales:** Search (Listing).
-    *   **Master Data:** Listing for Harvest Types, Production Cost Types, Workers, and Seasons.
+    *   **Sales:** Search (Listing) and Create.
+    *   **Master Data:** Listing for Harvest Types, Production Cost Types, Workers, Seasons, and Customers.
     *   **Season Control:** "End Season" logic (Transactional close/open).
 *   **Inactive/Commented Features:** User, Contact, and Address features remain in the codebase but are inactive.
-*   **Routes:** Active endpoints include `/api/bagang`, `/api/sales`, `/api/harvest-types`, `/api/production-cost-types`, `/api/workers`, and `/api/seasons` (GET and POST /end).
+*   **Routes:** Active endpoints include `/api/bagang`, `/api/sales`, `/api/harvest-types`, `/api/production-cost-types`, `/api/workers`, `/api/customers`, and `/api/seasons`.
 *   **Updates (Jan 12, 2026):**
+    *   **Customer Feature:** Added full CRUD for Customers.
+    *   **Sales Creation:** Implemented `POST /api/sales` to allow creating new sales transactions.
     *   **Sales Management:** Implemented full CRUD for Sales Items and Payments.
     *   **Logic:** Added logic to auto-calculate and update `IsPaidOff` status based on total items vs total payments.
-    *   **Repositories:** Added `SalesDetailRepository` and `TransactionDetailRepository`.
-    *   **Search & Filter:** Implemented server-side search and filtering for **Sales** (Customer, Paid Status) and **Bagang** (Name, Active Status).
-    *   **Client-Side Integration:** Frontend now utilizes the generic listing endpoints for robust client-side search across all Master Data, Sales, and Purchase features without requiring new backend endpoints.
+    *   **Repositories:** Added `SalesDetailRepository`, `TransactionDetailRepository`, and `CustomerRepository`.
+    *   **Search & Filter:** Implemented server-side search and filtering for **Sales**, **Bagang**, and **Customer**.
 
 ## How to Add a New Feature (Backend)
 

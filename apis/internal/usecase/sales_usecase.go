@@ -67,6 +67,34 @@ func (c *SalesUseCase) FindById(ctx context.Context, id int) (*model.SalesRespon
 	return converter.SalesToResponse(sales), nil
 }
 
+func (c *SalesUseCase) Create(ctx context.Context, request *model.CreateSalesRequest) (*model.SalesResponse, error) {
+	tx := c.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
+	sales := &entity.Sales{
+		Customer:  request.Customer,
+		IssuedAt:  time.Now(),
+		IsPaidOff: false,
+	}
+
+	if err := c.SalesRepository.Create(tx, sales); err != nil {
+		c.Log.WithError(err).Error("error creating sales")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.Log.WithError(err).Error("error committing transaction")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	return converter.SalesToResponse(sales), nil
+}
+
 func (c *SalesUseCase) AddSalesItem(ctx context.Context, salesId int, request *model.CreateSalesItemRequest) (*model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
