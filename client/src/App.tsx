@@ -12,6 +12,7 @@ import ProductionCostTypePage from "./pages/ProductionCostType/page";
 import WorkerPage from "./pages/Worker/page";
 import CustomerPage from "./pages/Customer/page";
 import DetailWorkerPage from "./pages/Worker/Detail/page";
+import PayrollPage from "./pages/Payroll/page";
 
 function App() {
     return (
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/pemilik" element={<WorkerPage />} />
                 <Route path="/pemilik/:id" element={<DetailWorkerPage />} />
                 <Route path="/pelanggan" element={<CustomerPage />} />
+                <Route path="/penggajian" element={<PayrollPage />} />
 
                 {/* Pembelian (Purchase from Bagang) */}
                 <Route path="/pembelian" element={<PurchasePage />} />

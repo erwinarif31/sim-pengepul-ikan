@@ -6,6 +6,7 @@ import {
     BoxIcon,
     CalenderIcon,
     ChevronDownIcon,
+    DocsIcon,
     DollarLineIcon,
     FileIcon,
     GridIcon,
@@ -40,6 +41,11 @@ const navItems: NavItem[] = [
         name: "Penjualan",
         icon: <DollarLineIcon />,
         path: "/penjualan/",
+    },
+    {
+        name: "Penggajian",
+        icon: <DocsIcon />,
+        path: "/penggajian/",
     },
 ];
 
