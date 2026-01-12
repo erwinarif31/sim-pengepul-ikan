@@ -28,6 +28,12 @@ func (r *BagangRepository) Search(db *gorm.DB, request *model.SearchBagangReques
 	if request.IsActive != nil {
 		query = query.Where("isactive = ?", *request.IsActive)
 	}
+	if request.WorkerID != "" {
+		query = query.Where("worker_id = ?", request.WorkerID)
+	}
+	if request.OwnerID != "" {
+		query = query.Where("owner_id = ?", request.OwnerID)
+	}
 
 	if err := query.Find(&bagangs).Error; err != nil {
 		return nil, err

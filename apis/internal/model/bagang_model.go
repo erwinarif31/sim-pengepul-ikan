@@ -24,4 +24,6 @@ type BagangCreateRequest struct {
 type SearchBagangRequest struct {
 	Name     string `query:"name"`
 	IsActive *bool  `query:"is_active"`
+	WorkerID string `query:"worker_id"`
+	OwnerID  string `query:"owner_id"`
 }
