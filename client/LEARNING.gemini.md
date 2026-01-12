@@ -248,3 +248,6 @@ Refined the "Production Cost Creator Role" feature to be more user-friendly and 
 
 ## Outcome
 The Production Cost feature now accurately attributes costs to specific individuals (Worker or Owner) by name, handling cases where roles overlap, and displaying this information clearly in the UI.
+
+### 3. Fixes
+-   **Missing Prop:** Fixed a bug where the `bagang` prop was not being passed to `ProductionCostFormModal` in the Purchase Detail page, causing the "Dilakukan oleh" dropdown to be empty.
