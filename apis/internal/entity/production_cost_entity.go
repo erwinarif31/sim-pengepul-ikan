@@ -12,6 +12,7 @@ type ProductionCost struct {
 	CreatedBy             *string   `gorm:"column:created_by"`
 	CreatedByName         *string   `gorm:"column:created_by_name"`
 	ProductionCostsSeason int       `gorm:"column:production_costs_season"`
+	CreatorRole           string    `gorm:"column:creator_role"`
 }
 
 func (ProductionCost) TableName() string {

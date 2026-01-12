@@ -50,6 +50,7 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 		ProductionCostType:    request.ProductionCostType,
 		Price:                 request.Price,
 		ProductionCostsSeason: activeSeason.ID,
+		CreatorRole:           request.CreatorRole,
 	}
 
 	if err := c.ProductionCostRepository.Create(tx, entity); err != nil {
@@ -78,6 +79,9 @@ func (c *ProductionCostUseCase) Update(ctx context.Context, id string, request *
 		entity.ProductionCostType = request.ProductionCostType
 	}
 	entity.Price = request.Price
+	if request.CreatorRole != "" {
+		entity.CreatorRole = request.CreatorRole
+	}
 
 	if err := c.ProductionCostRepository.Update(tx, entity); err != nil {
 		c.Log.WithError(err).Error("error updating production cost")

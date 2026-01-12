@@ -25,6 +25,7 @@ type ProductionCostResponse struct {
 	CreatedBy             *string   `json:"created_by"`
 	CreatedByName         *string   `json:"created_by_name"`
 	ProductionCostsSeason int       `json:"production_costs_season"`
+	CreatorRole           string    `json:"creator_role"`
 }
 
 type CreateHarvestRequest struct {
@@ -48,9 +49,11 @@ type CreateProductionCostRequest struct {
 	BagangID           string `json:"bagang_id" validate:"required,uuid"`
 	ProductionCostType string `json:"production_costs_type" validate:"required"`
 	Price              int    `json:"price" validate:"required,min=0"`
+	CreatorRole        string `json:"creator_role" validate:"required,oneof=worker owner"`
 }
 
 type UpdateProductionCostRequest struct {
 	ProductionCostType string `json:"production_costs_type"`
 	Price              int    `json:"price" validate:"min=0"`
+	CreatorRole        string `json:"creator_role" validate:"omitempty,oneof=worker owner"`
 }

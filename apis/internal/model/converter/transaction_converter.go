@@ -31,5 +31,6 @@ func ProductionCostToResponse(cost *entity.ProductionCost) *model.ProductionCost
 		CreatedBy:             cost.CreatedBy,
 		CreatedByName:         cost.CreatedByName,
 		ProductionCostsSeason: cost.ProductionCostsSeason,
+		CreatorRole:           cost.CreatorRole,
 	}
 }
