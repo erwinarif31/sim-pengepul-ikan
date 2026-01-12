@@ -2,7 +2,9 @@ package repository
 
 import (
 	"github.com/erwinarif31/catchery-api/internal/entity"
+	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type BagangRepository struct {
