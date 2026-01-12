@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { ChevronDownIcon, GridIcon, HorizontaLDots, TableIcon } from "../icons";
+import {
+    BoxCubeIcon,
+    BoxIcon,
+    CalenderIcon,
+    ChevronDownIcon,
+    DollarLineIcon,
+    FileIcon,
+    GridIcon,
+    GroupIcon,
+    HorizontaLDots,
+    ListIcon,
+    TableIcon,
+    UserCircleIcon,
+    UserIcon,
+} from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -19,12 +33,12 @@ const navItems: NavItem[] = [
     },
     {
         name: "Pembelian",
-        icon: <TableIcon />,
+        icon: <BoxCubeIcon />,
         path: "/pembelian/",
     },
     {
         name: "Penjualan",
-        icon: <TableIcon />,
+        icon: <DollarLineIcon />,
         path: "/penjualan/",
     },
 ];
@@ -32,37 +46,37 @@ const navItems: NavItem[] = [
 const masterDataItems: NavItem[] = [
     {
         name: "Bagang",
-        icon: <TableIcon />,
+        icon: <BoxIcon />,
         path: "/bagang",
     },
     {
         name: "Musim",
-        icon: <TableIcon />,
+        icon: <CalenderIcon />,
         path: "/musim",
     },
     {
         name: "Jenis Ikan",
-        icon: <TableIcon />,
+        icon: <ListIcon />,
         path: "/jenis-ikan",
     },
     {
         name: "Jenis Pengeluaran",
-        icon: <TableIcon />,
+        icon: <FileIcon />,
         path: "/jenis-pengeluaran",
     },
     {
         name: "Pekerja",
-        icon: <TableIcon />,
+        icon: <GroupIcon />,
         path: "/pekerja",
     },
     {
         name: "Pemilik",
-        icon: <TableIcon />,
+        icon: <UserIcon />,
         path: "/pemilik",
     },
     {
         name: "Pelanggan",
-        icon: <TableIcon />,
+        icon: <UserCircleIcon />,
         path: "/pelanggan",
     },
 ];
