@@ -11,6 +11,7 @@ const ProductionCostSchema = z.object({
     created_by: z.string().nullable().optional(),
     created_by_name: z.string().nullable().optional(),
     production_costs_season: z.number(),
+    creator_role: z.string().optional(),
 });
 
 const ProductionCostListSchema = ProductionCostSchema.array();

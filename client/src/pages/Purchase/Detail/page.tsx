@@ -202,6 +202,15 @@ const DetailSalesPage = () => {
         },
         { key: "production_costs_type", title: "Jenis Pengeluaran" },
         {
+            key: "creator_role",
+            title: "Pembuat",
+            render: (row) => {
+                if (row.creator_role === "owner") return "Pemilik";
+                if (row.creator_role === "worker") return "Pekerja";
+                return "-";
+            },
+        },
+        {
             key: "price",
             title: "Harga",
             render: (row) => `Rp ${row.price.toLocaleString("id-ID")}`,

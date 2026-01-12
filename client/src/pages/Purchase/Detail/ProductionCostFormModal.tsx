@@ -12,6 +12,7 @@ import { ProductionCostProps } from "../../../features/production-cost/api/produ
 const schema = z.object({
     production_costs_type: z.string().min(1, "Jenis pengeluaran wajib dipilih"),
     price: z.string().transform((v) => parseInt(v)).pipe(z.number().min(0)),
+    creator_role: z.string().min(1, "Pembuat wajib dipilih"),
 });
 
 type FormProps = z.infer<typeof schema>;
@@ -58,11 +59,13 @@ export default function ProductionCostFormModal({
                 reset({
                     production_costs_type: initialData.production_costs_type,
                     price: initialData.price.toString() as any,
+                    creator_role: initialData.creator_role || "worker",
                 });
             } else {
                 reset({
                     production_costs_type: "",
                     price: "" as any,
+                    creator_role: "worker",
                 });
             }
         }
@@ -101,6 +104,23 @@ export default function ProductionCostFormModal({
                             error={!!errors.price}
                             hint={errors.price?.message}
                             {...register("price")}
+                        />
+                    </div>
+                    <div>
+                        <Label>Pembuat</Label>
+                        <Select
+                            options={[
+                                { value: "worker", label: "Pekerja" },
+                                { value: "owner", label: "Pemilik" },
+                            ]}
+                            placeholder="Pilih Pembuat"
+                            error={!!errors.creator_role}
+                            hint={errors.creator_role?.message}
+                            {...register("creator_role")}
+                            onChange={(value) =>
+                                setValue("creator_role", value as string)
+                            }
+                            value={watch("creator_role")}
                         />
                     </div>
                     <div className="flex justify-end gap-2 mt-4">
