@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
 import Button from "../../component/ui/button/Button";
@@ -9,42 +9,30 @@ import useDeleteBagangMutation from "../../features/bagang/hooks/useDeleteBagang
 import BagangFormModal from "./FormModal";
 import { BagangProps } from "../../features/bagang/api/bagang.type";
 import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
-import Input from "../../component/form/input/InputField";
-import Select from "../../component/form/Select";
 
 const BagangTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBagang, setEditingBagang] = useState<BagangProps | null>(null);
     const itemsPerPage = 5;
-
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    // Debounce search input
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedSearch(search);
-            setCurrentPage(1); // Reset to first page on search
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [search]);
-
-    // Construct params
-    const params: any = {};
-    if (debouncedSearch) params.name = debouncedSearch;
-    if (statusFilter) {
-        if (statusFilter === "active") params.is_active = "true";
-        if (statusFilter === "inactive") params.is_active = "false";
-    }
-
-    const { data: response, isLoading, error } = useBagangQuery({ params });
+    const { data: response, isLoading, error } = useBagangQuery();
     const { mutate: createBagang, isPending: isCreating } = useCreateBagangMutation();
     const { mutate: updateBagang, isPending: isUpdating } = useUpdateBagangMutation();
     const { mutate: deleteBagang } = useDeleteBagangMutation();
 
     const data = response?.data?.data || [];
+
+    // Client-side filtering
+    const filteredData = data.filter((item) => {
+        const searchTerm = search.toLowerCase();
+        return (
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.worker_name.toLowerCase().includes(searchTerm) ||
+            item.owner_name.toLowerCase().includes(searchTerm)
+        );
+    });
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -83,7 +71,7 @@ const BagangTable = () => {
         setIsModalOpen(true);
     };
 
-    const paginatedData = data.slice(
+    const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
     );
@@ -91,7 +79,7 @@ const BagangTable = () => {
     const columns: TableHeader[] = [
         {
             key: "name",
-            title: "Name",
+            title: "Nama",
             sortable: true,
             columnClassName: "w-1/4",
         },
@@ -117,13 +105,13 @@ const BagangTable = () => {
                     className={`px-2 py-1 rounded text-xs text-white ${row.is_active ? "bg-green-500" : "bg-red-500"
                         }`}
                 >
-                    {row.is_active ? "Active" : "Inactive"}
+                    {row.is_active ? "Aktif" : "Tidak Aktif"}
                 </span>
             ),
         },
         {
             key: "actions",
-            title: "Actions",
+            title: "Aksi",
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <button
@@ -153,34 +141,10 @@ const BagangTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="w-full md:w-1/3">
-                    <Input
-                        placeholder="Cari Bagang..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-                <div className="w-full md:w-1/4">
-                    <Select
-                        options={[
-                            { value: "", label: "Semua Status" },
-                            { value: "active", label: "Active" },
-                            { value: "inactive", label: "Inactive" },
-                        ]}
-                        placeholder="Filter Status"
-                        value={statusFilter}
-                        onChange={(value) => {
-                            setStatusFilter(value);
-                            setCurrentPage(1); // Reset page on filter change
-                        }}
-                    />
-                </div>
-                <div className="ml-auto">
-                    <Button size="sm" variant="primary" onClick={openCreateModal}>
-                        Tambah Bagang
-                    </Button>
-                </div>
+            <div className="flex justify-end">
+                <Button size="sm" variant="primary" onClick={openCreateModal}>
+                    Tambah Bagang
+                </Button>
             </div>
 
             <BasicTableData
@@ -191,9 +155,14 @@ const BagangTable = () => {
                 pagination={{
                     current_page: currentPage,
                     per_page: itemsPerPage,
-                    total: data.length,
+                    total: filteredData.length,
                 }}
                 onPageChange={handlePageChange}
+                onSearch={(val) => {
+                    setSearch(val);
+                    setCurrentPage(1);
+                }}
+                searchValue={search}
             />
 
             <BagangFormModal

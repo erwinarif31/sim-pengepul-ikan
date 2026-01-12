@@ -15,6 +15,7 @@ const WorkerTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingWorker, setEditingWorker] = useState<WorkerProps | null>(null);
     const itemsPerPage = 5;
+    const [search, setSearch] = useState("");
 
     const { data: response, isLoading, error } = useWorkerQuery();
     const { mutate: createWorker, isPending: isCreating } = useCreateWorkerMutation();
@@ -22,6 +23,11 @@ const WorkerTable = () => {
     const { mutate: deleteWorker } = useDeleteWorkerMutation();
 
     const data = response?.data?.data || [];
+
+    // Client-side filtering
+    const filteredData = data.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+    );
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -60,7 +66,7 @@ const WorkerTable = () => {
         setIsModalOpen(true);
     };
 
-    const paginatedData = data.slice(
+    const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
     );
@@ -68,13 +74,13 @@ const WorkerTable = () => {
     const columns: TableHeader[] = [
         {
             key: "name",
-            title: "Name",
+            title: "Nama",
             sortable: true,
             columnClassName: "w-3/4",
         },
         {
             key: "actions",
-            title: "Actions",
+            title: "Aksi",
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <button
@@ -104,6 +110,12 @@ const WorkerTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
+            <div className="flex justify-end mb-4">
+                <Button size="sm" variant="primary" onClick={openCreateModal}>
+                    Tambah
+                </Button>
+            </div>
+
             <BasicTableData
                 columns={columns}
                 data={paginatedData}
@@ -112,14 +124,14 @@ const WorkerTable = () => {
                 pagination={{
                     current_page: currentPage,
                     per_page: itemsPerPage,
-                    total: data.length,
+                    total: filteredData.length,
                 }}
                 onPageChange={handlePageChange}
-                buttons={
-                    <Button size="sm" variant="primary" onClick={openCreateModal}>
-                        Tambah
-                    </Button>
-                }
+                onSearch={(val) => {
+                    setSearch(val);
+                    setCurrentPage(1);
+                }}
+                searchValue={search}
             />
 
             <WorkerFormModal

@@ -40,11 +40,37 @@ const columns: TableHeader[] = [
 const SeasonTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const [search, setSearch] = useState("");
 
     const { data: response, isLoading, error } = useSeasonQuery();
     const { mutate: endSeason, isPending: isEnding } = useEndSeasonMutation();
 
     const data = response?.data?.data || [];
+
+    // Client-side filtering
+    const filteredData = data.filter((item) => {
+        const searchTerm = search.toLowerCase();
+
+        const startDate = new Date(item.start_date).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+
+        let endDate = "-";
+        if (item.end_date) {
+            endDate = new Date(item.end_date).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+            });
+        }
+
+        return (
+            startDate.toLowerCase().includes(searchTerm) ||
+            endDate.toLowerCase().includes(searchTerm)
+        );
+    });
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -56,7 +82,7 @@ const SeasonTable = () => {
         }
     };
 
-    const paginatedData = data.slice(
+    const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
     );
@@ -71,6 +97,17 @@ const SeasonTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
+            <div className="flex justify-end mb-4">
+                <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={handleEndSeason}
+                    disabled={isEnding}
+                >
+                    {isEnding ? "Memproses..." : "Akhiri Musim"}
+                </Button>
+            </div>
+
             <BasicTableData
                 columns={columns}
                 data={paginatedData}
@@ -79,19 +116,14 @@ const SeasonTable = () => {
                 pagination={{
                     current_page: currentPage,
                     per_page: itemsPerPage,
-                    total: data.length,
+                    total: filteredData.length,
                 }}
                 onPageChange={handlePageChange}
-                buttons={
-                    <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={handleEndSeason}
-                        disabled={isEnding}
-                    >
-                        {isEnding ? "Memproses..." : "Akhiri Musim"}
-                    </Button>
-                }
+                onSearch={(val) => {
+                    setSearch(val);
+                    setCurrentPage(1);
+                }}
+                searchValue={search}
             />
         </div>
     );

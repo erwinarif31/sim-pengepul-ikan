@@ -14,6 +14,7 @@ import AddItemModal from "./AddItemModal";
 import AddPaymentModal from "./AddPaymentModal";
 import type { TableHeader } from "../../../component/table/types";
 import toast from "react-hot-toast";
+import Input from "../../../component/form/input/InputField";
 
 const DetailSalesPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ const DetailSalesPage = () => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<any | null>(null);
     const [editingPayment, setEditingPayment] = useState<any | null>(null);
+    const [itemSearch, setItemSearch] = useState("");
 
     const { data: response, isLoading } = useSalesDetailQuery(salesId);
     const salesData = response?.data?.data;
@@ -140,6 +142,10 @@ const DetailSalesPage = () => {
 
     const remaining = (salesData.total_amount || 0) - (salesData.total_paid || 0);
 
+    const filteredItems = salesData.sales_details?.filter((item) =>
+        item.harvest_types.toLowerCase().includes(itemSearch.toLowerCase())
+    ) || [];
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -168,11 +174,20 @@ const DetailSalesPage = () => {
             </div>
 
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h2 className="text-lg font-semibold">Rincian Barang</h2>
-                    <Button size="sm" onClick={openAddItem}>Tambah Barang</Button>
+                    <div className="flex w-full sm:w-auto gap-2">
+                        <div className="w-full sm:w-48">
+                            <Input
+                                placeholder="Cari Item..."
+                                value={itemSearch}
+                                onChange={(e) => setItemSearch(e.target.value)}
+                            />
+                        </div>
+                        <Button size="sm" onClick={openAddItem}>Tambah Barang</Button>
+                    </div>
                 </div>
-                <BasicTableData columns={itemColumns} data={salesData.sales_details || []} useNumbering />
+                <BasicTableData columns={itemColumns} data={filteredItems} useNumbering />
             </div>
 
             <div className="space-y-4">
