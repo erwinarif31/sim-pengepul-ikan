@@ -4,11 +4,14 @@ import type { TableHeader } from "../../component/table/types";
 import { EyeIcon } from "../../icons";
 import useSalesQuery from "../../features/sales/hooks/useSales";
 import { Link } from "react-router-dom";
+import Button from "../../component/ui/button/Button";
+import CreateSalesModal from "./CreateModal";
 
 const SalesTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const { data: response, isLoading, error } = useSalesQuery();
 
@@ -105,6 +108,16 @@ const SalesTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
+            <div className="flex justify-end mb-4">
+                <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => setIsCreateModalOpen(true)}
+                >
+                    Tambah Penjualan
+                </Button>
+            </div>
+
             <BasicTableData
                 columns={columns}
                 data={paginatedData}
@@ -121,6 +134,11 @@ const SalesTable = () => {
                     setCurrentPage(1);
                 }}
                 searchValue={search}
+            />
+
+            <CreateSalesModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
             />
         </div>
     );
