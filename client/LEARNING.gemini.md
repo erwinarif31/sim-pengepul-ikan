@@ -227,3 +227,24 @@ The user requested to track *who* incurs a production cost (Worker or Owner) to 
 
 ## Outcome
 Production costs now explicitly state whether they were made by the Worker or the Owner, providing the necessary data foundation for accurate financial reporting and profit sharing.
+
+# Learning Log - Enhanced Production Cost Role Handling
+
+## Context
+Refined the "Production Cost Creator Role" feature to be more user-friendly and data-rich. The previous implementation only stored the role ("worker"/"owner") but didn't link it to the specific person's name or ID effectively for display.
+
+## Changes
+
+### 1. Backend
+-   **UseCase Logic:** Updated `ProductionCostUseCase.Create` to fetch the associated `Bagang` entity. It now uses the `CreatorRole` ("worker"/"owner") to lookup the correct `WorkerID`/`OwnerID` and `Name` from the Bagang and persists them to `CreatedBy` and `CreatedByName` fields in the `production_costs` table.
+-   **Dependency Injection:** Injected `BagangRepository` into `ProductionCostUseCase` to facilitate the lookup.
+
+### 2. Frontend
+-   **Modal Logic:**
+    -   `ProductionCostFormModal` now accepts `bagang` data.
+    -   Dynamically generates "Dilakukan oleh" (Done by) options: "Pekerja - [Name]" and "Pemilik - [Name]".
+    -   **Smart Default:** If the Worker and Owner are the same person (same ID), it presents a combined option (e.g., "Pekerja & Pemilik - [Name]") to avoid redundancy.
+-   **Table Display:** Updated the "Pengeluaran" table to display the actual name of the creator (e.g., "Pekerja - Budi") derived from the backend's `CreatedByName` and `CreatorRole`, providing clear attribution.
+
+## Outcome
+The Production Cost feature now accurately attributes costs to specific individuals (Worker or Owner) by name, handling cases where roles overlap, and displaying this information clearly in the UI.
