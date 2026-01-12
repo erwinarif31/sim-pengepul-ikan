@@ -20,7 +20,7 @@
 3.  **`src/component/`**: Reusable UI blocks.
 
 ## Current State (Jan 2026)
-*   **Active Features:** Bagang, Sales, Seasons, Harvest Types, Production Cost Types, and Workers.
+*   **Active Features:** Bagang, Sales, Seasons, Harvest Types, Production Cost Types, Workers, and Customers.
 *   **Refactored:** The Sales page now uses the standard Service/Hook pattern and connects to the correct `/api/sales` endpoint.
 *   **Master Data:** Expanded sidebar navigation for comprehensive data management.
 *   **Updates (Jan 12, 2026):**
@@ -30,6 +30,7 @@
     *   **Sales Detail:** Implemented full CRUD for Sales Items and Payments with automatic "Paid Off" status calculation.
     *   **UI Tweaks:** Moved "Kembali" buttons to the right side of headers.
     *   **Search & Filter UI:** Added Search (Debounced Input) and Filter (Select) components to `SalesTable` and `BagangTable`, wired to backend search endpoints.
+    *   **Customer Feature:** Implemented full Master Data management for Customers (Pelanggan), integrated into Sales creation.
 
 ## How to Add a New Feature (Frontend)
 
@@ -182,3 +183,24 @@ The user requested two major changes across all table views:
 
 ## Outcome
 The application now provides a consistent, localized user experience in Bahasa Indonesia with powerful, multi-column search capabilities across all main data tables.
+
+# Learning Log - Customer Master Data & Sales Creation
+
+## Context
+The user requested a way to manage "Pelanggan" (Customer) master data and add data from the "Penjualan" (Sales) page. This required implementing a full Master Data CRUD for Customers and filling the gap in Sales creation logic.
+
+## Changes
+
+### 1. Backend Implementation
+-   **Customer Feature:** Created full vertical slice (Entity, Repository, UseCase, Controller) for `Customer`.
+-   **Database:** Added `customers` table migration.
+-   **Sales Update:** Implemented the missing `Create` method in `SalesUseCase` and `SalesController`, exposing `POST /api/sales`.
+
+### 2. Frontend Implementation
+-   **Customer Master Data:** Created `features/customer` and `pages/Customer` with full CRUD capabilities (Table, Form Modal, Services).
+-   **Sales Integration:**
+    -   Added "Tambah Penjualan" button to `SalesTable`.
+    -   Implemented `CreateSalesModal` which allows selecting an existing Customer OR creating a new one on the fly via a nested `CustomerFormModal`.
+
+## Outcome
+Users can now manage Customer data independently in the Master Data section or create new Customers directly while recording a new Sale, fulfilling the requirement for seamless data entry.
