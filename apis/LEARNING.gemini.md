@@ -101,6 +101,7 @@ The project strictly follows separation of concerns:
     *   **Logic:** Added logic to auto-calculate and update `IsPaidOff` status based on total items vs total payments.
     *   **Repositories:** Added `SalesDetailRepository`, `TransactionDetailRepository`, and `CustomerRepository`.
     *   **Search & Filter:** Implemented server-side search and filtering for **Sales**, **Bagang**, and **Customer**.
+    *   **Bug Fixes:** Resolved missing imports in `BagangRepository` and `SalesRepository`.
 
 ## How to Add a New Feature (Backend)
 
