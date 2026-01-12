@@ -2,7 +2,7 @@ import React from "react";
 import PageBreadcrumb from "../../component/common/PageBreadCrumb";
 import PageMeta from "../../component/common/PageMeta";
 import { useParams } from "react-router-dom";
-import SalesTable from "./table";
+import PurchaseTable from "./table";
 
 const BagangHarvestPage: React.FC = () => {
     const { id } = useParams();
@@ -15,7 +15,7 @@ const BagangHarvestPage: React.FC = () => {
             />
             <PageBreadcrumb pageTitle="Pembelian" />
             <div className="space-y-6">
-                <SalesTable />
+                <PurchaseTable />
             </div>
         </>
     );

@@ -1,26 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
 import { EyeIcon } from "../../icons";
 import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
 import { Link } from "react-router-dom";
+import Input from "../../component/form/input/InputField";
+import Select from "../../component/form/Select";
 
-const SalesTable = () => {
+const PurchaseTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // TODO: Pass filter { is_active: true } when backend supports it
+    const [search, setSearch] = useState("");
+    
+    // Fetch all data
     const { data: response, isLoading, error } = useBagangQuery();
 
     const data = response?.data?.data || [];
-    // Client-side filter for now until backend supports it
-    const activeBagangs = data.filter((bagang) => bagang.is_active);
+    
+    // Client-side filtering
+    const filteredData = data.filter((item) => {
+        const searchTerm = search.toLowerCase();
+        return (
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.worker_name.toLowerCase().includes(searchTerm) ||
+            item.owner_name.toLowerCase().includes(searchTerm)
+        );
+    });
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
 
-    const paginatedData = activeBagangs.slice(
+    const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
     );
@@ -69,7 +81,7 @@ const SalesTable = () => {
     }
 
     return (
-        <div className="p-4 md:p-6 2xl:p-10">
+        <div className="p-4 md:p-6 2xl:p-10 space-y-4">
             <BasicTableData
                 columns={columns}
                 data={paginatedData}
@@ -78,12 +90,17 @@ const SalesTable = () => {
                 pagination={{
                     current_page: currentPage,
                     per_page: itemsPerPage,
-                    total: activeBagangs.length,
+                    total: filteredData.length,
                 }}
                 onPageChange={handlePageChange}
+                onSearch={(val) => {
+                    setSearch(val);
+                    setCurrentPage(1);
+                }}
+                searchValue={search}
             />
         </div>
     );
 };
 
-export default SalesTable;
+export default PurchaseTable;
