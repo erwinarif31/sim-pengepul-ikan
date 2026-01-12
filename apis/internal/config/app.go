@@ -94,6 +94,15 @@ func Bootstrap(config *BootstrapConfig) {
 		config.Validate,
 		customerRepository,
 	)
+	payrollUseCase := usecase.NewPayrollUseCase(
+		config.DB,
+		config.Log,
+		harvestRepository,
+		productionCostRepository,
+		bagangRepository,
+		workerRepository,
+		seasonRepository,
+	)
 	// setup controller
 	// userController := http.NewUserController(userUseCase, config.Log)
 	// contactController := http.NewContactController(contactUseCase, config.Log)
@@ -104,6 +113,7 @@ func Bootstrap(config *BootstrapConfig) {
 	harvestController := http.NewHarvestController(config.Log, harvestUseCase)
 	productionCostController := http.NewProductionCostController(config.Log, productionCostUseCase)
 	customerController := http.NewCustomerController(config.Log, customerUseCase)
+	payrollController := http.NewPayrollController(config.Log, payrollUseCase)
 
 	// setup middleware
 	// authMiddleware := middleware.NewAuth(userUseCase)
@@ -117,6 +127,7 @@ func Bootstrap(config *BootstrapConfig) {
 		HarvestController:        harvestController,
 		ProductionCostController: productionCostController,
 		CustomerController:       customerController,
+		PayrollController:        payrollController,
 	}
 	routeConfig.Setup()
 }

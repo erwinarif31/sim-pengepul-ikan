@@ -21,6 +21,8 @@ type RouteConfig struct {
 
 	CustomerController       *http.CustomerController
 
+	PayrollController        *http.PayrollController
+
 	// AuthMiddleware    fiber.Handler
 
 }
@@ -54,8 +56,6 @@ func (c *RouteConfig) SetupGuestRoute() {
 		c.App.Get("/api/bagang", c.BagangController.Search)
 
 	
-
-		c.App.Post("/api/sales", c.SalesController.Create)
 
 		c.App.Get("/api/sales", c.SalesController.Search)
 
@@ -154,6 +154,8 @@ func (c *RouteConfig) SetupGuestRoute() {
 		c.App.Get("/api/customers/:id", c.CustomerController.FindById)
 
 		c.App.Get("/api/customers", c.CustomerController.Search)
+
+		c.App.Get("/api/payroll/:workerId", c.PayrollController.GeneratePDF)
 
 	}
 
