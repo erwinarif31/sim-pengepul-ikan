@@ -251,3 +251,4 @@ The Production Cost feature now accurately attributes costs to specific individu
 
 ### 3. Fixes
 -   **Missing Prop:** Fixed a bug where the `bagang` prop was not being passed to `ProductionCostFormModal` in the Purchase Detail page, causing the "Dilakukan oleh" dropdown to be empty.
+-   **ReferenceError:** Fixed a regression where `useBagangDetailQuery` import and `bagang` variable definition were accidentally lost during previous refactoring, causing a runtime error in the Purchase Detail page.
