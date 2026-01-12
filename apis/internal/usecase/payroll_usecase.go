@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/erwinarif31/catchery-api/internal/entity"
-	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jung-kurt/gofpdf"
@@ -116,8 +115,8 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 
 	// 8. Generate PDF
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
+	pdf.AddPage()
 	pdf.Cell(40, 10, "Laporan Penggajian")
 	pdf.Ln(12)
 
@@ -126,7 +125,7 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 	pdf.Ln(8)
 	pdf.Cell(40, 10, fmt.Sprintf("Tanggal: %s", time.Now().Format("02 Jan 2006")))
 	pdf.Ln(8)
-	pdf.Cell(40, 10, fmt.Sprintf("Musim: %s", activeSeason.StartDate.Format("02 Jan 2006"))) // Start date of active season
+	pdf.Cell(40, 10, fmt.Sprintf("Musim: %s", activeSeason.StartDate.Format("02 Jan 2006")))
 	pdf.Ln(12)
 
 	// Summary Table
@@ -169,8 +168,14 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 		pdf.Ln(6)
 	}
 
+	if pdf.Error() != nil {
+		c.Log.WithError(pdf.Error()).Error("error generating PDF content")
+		return nil, "", pdf.Error()
+	}
+
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
+		c.Log.WithError(err).Error("error outputting PDF buffer")
 		return nil, "", err
 	}
 
