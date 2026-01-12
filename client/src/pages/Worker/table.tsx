@@ -7,8 +7,9 @@ import WorkerFormModal from "./FormModal";
 import useCreateWorkerMutation from "../../features/worker/hooks/useCreateWorkerMutation";
 import useUpdateWorkerMutation from "../../features/worker/hooks/useUpdateWorkerMutation";
 import useDeleteWorkerMutation from "../../features/worker/hooks/useDeleteWorkerMutation";
-import { TrashBinIcon, PencilIcon } from "../../icons";
+import { TrashBinIcon, PencilIcon, EyeIcon } from "../../icons";
 import { WorkerProps } from "../../features/worker/api/worker.type";
+import { Link } from "react-router-dom";
 
 const WorkerTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -25,7 +26,7 @@ const WorkerTable = () => {
     const data = response?.data?.data || [];
 
     // Client-side filtering
-    const filteredData = data.filter((item) =>
+    const filteredData = data.filter((item) => 
         item.name.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -83,6 +84,12 @@ const WorkerTable = () => {
             title: "Aksi",
             render: (row) => (
                 <div className="flex justify-center gap-2">
+                    <Link
+                        to={`/pekerja/${row.id}`}
+                        className="text-gray-500 hover:text-gray-700"
+                    >
+                        <EyeIcon className="size-5" />
+                    </Link>
                     <button
                         onClick={() => openEditModal(row)}
                         className="text-blue-500 hover:text-blue-700"
@@ -99,7 +106,6 @@ const WorkerTable = () => {
             ),
         },
     ];
-
     if (error) {
         return (
             <div className="p-4 md:p-6 2xl:p-10 text-red-500">

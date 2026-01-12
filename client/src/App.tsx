@@ -11,6 +11,7 @@ import HarvestTypePage from "./pages/HarvestType/page";
 import ProductionCostTypePage from "./pages/ProductionCostType/page";
 import WorkerPage from "./pages/Worker/page";
 import CustomerPage from "./pages/Customer/page";
+import DetailWorkerPage from "./pages/Worker/Detail/page";
 
 function App() {
     return (
@@ -25,7 +26,9 @@ function App() {
                     element={<ProductionCostTypePage />}
                 />
                 <Route path="/pekerja" element={<WorkerPage />} />
+                <Route path="/pekerja/:id" element={<DetailWorkerPage />} />
                 <Route path="/pemilik" element={<WorkerPage />} />
+                <Route path="/pemilik/:id" element={<DetailWorkerPage />} />
                 <Route path="/pelanggan" element={<CustomerPage />} />
 
                 {/* Pembelian (Purchase from Bagang) */}
