@@ -60,6 +60,11 @@ const masterDataItems: NavItem[] = [
         icon: <TableIcon />,
         path: "/pemilik",
     },
+    {
+        name: "Pelanggan",
+        icon: <TableIcon />,
+        path: "/pelanggan",
+    },
 ];
 
 const AppSidebar: React.FC = () => {
