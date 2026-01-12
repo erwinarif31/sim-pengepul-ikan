@@ -3,6 +3,7 @@ import BasicTableData from "../../../component/table/BasicTableData";
 import type { TableHeader } from "../../../component/table/types";
 import useHarvestsQuery from "../../../features/harvest/hooks/useHarvestsQuery";
 import useProductionCostsQuery from "../../../features/production-cost/hooks/useProductionCostsQuery";
+import useBagangDetailQuery from "../../../features/bagang/hooks/useBagangDetailQuery";
 import { useParams, Link } from "react-router-dom";
 import Button from "../../../component/ui/button/Button";
 import { ChevronLeftIcon, PencilIcon, TrashBinIcon } from "../../../icons";
@@ -33,6 +34,9 @@ const DetailSalesPage = () => {
         useHarvestsQuery(bagangId);
     const { data: costResponse, isLoading: isLoadingCosts } =
         useProductionCostsQuery(bagangId);
+    const { data: bagangResponse } = useBagangDetailQuery(bagangId);
+    
+    const bagang = bagangResponse?.data?.data;
 
     const { mutate: createHarvest, isPending: isCreatingHarvest } =
         useCreateHarvestMutation();
