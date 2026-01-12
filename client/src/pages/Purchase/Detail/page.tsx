@@ -203,11 +203,10 @@ const DetailSalesPage = () => {
         { key: "production_costs_type", title: "Jenis Pengeluaran" },
         {
             key: "creator_role",
-            title: "Pembuat",
+            title: "Dilakukan oleh",
             render: (row) => {
-                if (row.creator_role === "owner") return "Pemilik";
-                if (row.creator_role === "worker") return "Pekerja";
-                return "-";
+                const role = row.creator_role === "owner" ? "Pemilik" : row.creator_role === "worker" ? "Pekerja" : "-";
+                return row.created_by_name ? `${role} - ${row.created_by_name}` : role;
             },
         },
         {

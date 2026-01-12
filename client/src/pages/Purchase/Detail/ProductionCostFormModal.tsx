@@ -8,6 +8,7 @@ import Select from "../../../component/form/Select";
 import { Modal } from "../../../component/ui/modal";
 import useProductionCostTypeQuery from "../../../features/production-cost-type/hooks/useProductionCostType";
 import { ProductionCostProps } from "../../../features/production-cost/api/production-cost.type";
+import { BagangProps } from "../../../features/bagang/api/bagang.type";
 
 const schema = z.object({
     production_costs_type: z.string().min(1, "Jenis pengeluaran wajib dipilih"),
@@ -23,6 +24,7 @@ interface ProductionCostFormModalProps {
     onSubmit: (data: any) => void;
     initialData?: ProductionCostProps | null;
     isLoading?: boolean;
+    bagang?: BagangProps;
 }
 
 export default function ProductionCostFormModal({
@@ -31,6 +33,7 @@ export default function ProductionCostFormModal({
     onSubmit,
     initialData,
     isLoading,
+    bagang,
 }: ProductionCostFormModalProps) {
     const { data: costTypeResponse } = useProductionCostTypeQuery();
     const costTypes = useMemo(() => {
@@ -41,6 +44,25 @@ export default function ProductionCostFormModal({
             })) || []
         );
     }, [costTypeResponse]);
+
+    const creatorOptions = useMemo(() => {
+        if (!bagang) return [];
+        
+        const options = [];
+        const isSamePerson = bagang.worker_id === bagang.owner_id;
+
+        if (isSamePerson) {
+             options.push({ value: "worker", label: `Pekerja & Pemilik - ${bagang.worker_name}` });
+        } else {
+             if (bagang.worker_id) {
+                 options.push({ value: "worker", label: `Pekerja - ${bagang.worker_name}` });
+             }
+             if (bagang.owner_id) {
+                 options.push({ value: "owner", label: `Pemilik - ${bagang.owner_name}` });
+             }
+        }
+        return options;
+    }, [bagang]);
 
     const {
         register,
@@ -62,14 +84,20 @@ export default function ProductionCostFormModal({
                     creator_role: initialData.creator_role || "worker",
                 });
             } else {
+                // Default selection logic
+                let defaultRole = "worker";
+                if (bagang && bagang.worker_id === bagang.owner_id) {
+                    defaultRole = "worker"; // Default to worker if same person
+                }
+                
                 reset({
                     production_costs_type: "",
                     price: "" as any,
-                    creator_role: "worker",
+                    creator_role: defaultRole,
                 });
             }
         }
-    }, [isOpen, initialData, reset]);
+    }, [isOpen, initialData, reset, bagang]);
 
     return (
         <Modal
@@ -107,12 +135,9 @@ export default function ProductionCostFormModal({
                         />
                     </div>
                     <div>
-                        <Label>Pembuat</Label>
+                        <Label>Dilakukan oleh</Label>
                         <Select
-                            options={[
-                                { value: "worker", label: "Pekerja" },
-                                { value: "owner", label: "Pemilik" },
-                            ]}
+                            options={creatorOptions}
                             placeholder="Pilih Pembuat"
                             error={!!errors.creator_role}
                             hint={errors.creator_role?.message}
