@@ -22,4 +22,6 @@ export interface BasicTableDataProps {
   pagination?: TablePagination;
   onPageChange?: (page: number) => void;
   buttons?: React.ReactNode;
+  onSearch?: (value: string) => void;
+  searchValue?: string;
 }

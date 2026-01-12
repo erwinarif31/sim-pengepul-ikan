@@ -6,31 +6,9 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { ChevronLeftIcon, ChevronDownIcon } from "../../icons";
-
-interface TableHeaderProps {
-  key: string;
-  title: string;
-  render?: (row: any) => React.ReactNode;
-  sortable?: boolean;
-  columnClassName?: string;
-}
-
-interface TablePagination {
-  current_page: number;
-  per_page: number;
-  total: number;
-}
-
-interface BasicTableDataProps {
-  columns: TableHeaderProps[];
-  data: any[];
-  isLoading?: boolean;
-  useNumbering?: boolean;
-  pagination?: TablePagination;
-  onPageChange?: (page: number) => void;
-  buttons?: React.ReactNode;
-}
+import { ChevronLeftIcon, ChevronRightIcon } from "../../icons";
+import Input from "../form/input/InputField";
+import { BasicTableDataProps } from "./types";
 
 const BasicTableData: React.FC<BasicTableDataProps> = ({
   columns,
@@ -40,6 +18,8 @@ const BasicTableData: React.FC<BasicTableDataProps> = ({
   pagination,
   onPageChange,
   buttons,
+  onSearch,
+  searchValue,
 }) => {
   const totalPages = pagination
     ? Math.ceil(pagination.total / pagination.per_page)
@@ -51,7 +31,19 @@ const BasicTableData: React.FC<BasicTableDataProps> = ({
         <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
           Data 
         </h3>
-        {buttons && <div className="flex gap-2">{buttons}</div>}
+        <div className="flex items-center gap-3">
+            {onSearch && (
+                <div className="w-64">
+                    <Input
+                        placeholder="Cari..."
+                        value={searchValue}
+                        onChange={(e) => onSearch(e.target.value)}
+                        className="!h-10"
+                    />
+                </div>
+            )}
+            {buttons && <div className="flex gap-2">{buttons}</div>}
+        </div>
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -82,16 +74,18 @@ const BasicTableData: React.FC<BasicTableDataProps> = ({
               <TableRow>
                 <TableCell
                   className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
+                  colSpan={columns.length + (useNumbering ? 1 : 0)}
                 >
-                  Loading...
+                  Memuat...
                 </TableCell>
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell
                   className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
+                  colSpan={columns.length + (useNumbering ? 1 : 0)}
                 >
-                  No data found
+                  Data tidak ditemukan
                 </TableCell>
               </TableRow>
             ) : (
@@ -123,13 +117,13 @@ const BasicTableData: React.FC<BasicTableDataProps> = ({
       {pagination && totalPages > 1 && (
         <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 dark:border-white/[0.05]">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Showing{" "}
-            {(pagination.current_page - 1) * pagination.per_page + 1} to{" "}
+            Menampilkan{" "}
+            {(pagination.current_page - 1) * pagination.per_page + 1} sampai{" "}
             {Math.min(
               pagination.current_page * pagination.per_page,
               pagination.total,
             )}{" "}
-            of {pagination.total} entries
+            dari {pagination.total} data
           </span>
           <div className="flex gap-2">
             <button
