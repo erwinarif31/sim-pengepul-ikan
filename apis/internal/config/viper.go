@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
@@ -14,6 +16,10 @@ func NewViper() *viper.Viper {
 	config.SetConfigType("json")
 	config.AddConfigPath("./../")
 	config.AddConfigPath("./")
+
+	config.AutomaticEnv()
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
 	err := config.ReadInConfig()
 
 	if err != nil {
