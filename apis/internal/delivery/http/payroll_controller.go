@@ -23,7 +23,8 @@ func NewPayrollController(
 
 func (c *PayrollController) GeneratePDF(ctx *fiber.Ctx) error {
 	workerID := ctx.Params("workerId")
-	pdfBytes, filename, err := c.PayrollUseCase.GeneratePayrollPDF(ctx.UserContext(), workerID)
+	bagangID := ctx.Query("bagangId")
+	pdfBytes, filename, err := c.PayrollUseCase.GeneratePayrollPDF(ctx.UserContext(), workerID, bagangID)
 	if err != nil {
 		return err
 	}

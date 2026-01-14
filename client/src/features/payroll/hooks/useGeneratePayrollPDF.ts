@@ -4,24 +4,13 @@ import PayrollService from "../api/payroll.service";
 
 const useGeneratePayrollPDF = () => {
     return useMutation({
-        mutationFn: ({ workerID, workerName }: { workerID: string; workerName: string }) =>
-            PayrollService.generatePayrollPDF(workerID),
+        mutationFn: ({ workerID, workerName, bagangID }: { workerID: string; workerName: string; bagangID?: string }) =>
+            PayrollService.generatePayrollPDF(workerID, bagangID),
         onSuccess: (data, variables) => {
             // Create a blob URL and trigger download
-            // 'data' here should be the Blob if the service returns it correctly.
-            // However, the custom http wrapper might return something else.
-            // Let's assume it returns the Blob directly for now based on service implementation.
+            // 'data' here is the Blob because the service returns response.data
             
-            // Checking if data is actually a Blob (or similar)
-            // If the custom http wrapper wraps it, we might need to adjust.
-            // But let's proceed with standard blob handling.
-            
-            // Note: If the response is wrapped in {data: ...}, we need to extract it.
-            // But since I used responseType: 'blob', Axios usually returns the blob in data.
-            // My custom http wrapper: `http.get` likely returns `response.data`.
-            
-            const blob = new Blob([data as any], { type: "application/pdf" });
-            const url = window.URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(data);
             const link = document.createElement("a");
             link.href = url;
             const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
@@ -29,6 +18,7 @@ const useGeneratePayrollPDF = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
             toast.success("PDF Payroll berhasil dibuat");
         },
         onError: (error) => {

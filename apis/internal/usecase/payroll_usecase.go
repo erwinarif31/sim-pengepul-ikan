@@ -44,7 +44,7 @@ func NewPayrollUseCase(
 	}
 }
 
-func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string) ([]byte, string, error) {
+func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string, bagangID string) ([]byte, string, error) {
 	tx := c.DB.WithContext(ctx)
 
 	// 1. Get Worker Info
@@ -61,24 +61,28 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 
 	// 3. Get Associated Bagangs
 	var bagangs []entity.Bagang
-	if err := tx.Where("worker_id = ? OR owner_id = ?", workerID, workerID).Find(&bagangs).Error; err != nil {
+	bagangQuery := tx.Where("worker_id = ? OR owner_id = ?", workerID, workerID)
+	if bagangID != "" {
+		bagangQuery = bagangQuery.Where("id = ?", bagangID)
+	}
+	if err := bagangQuery.Find(&bagangs).Error; err != nil {
 		return nil, "", err
 	}
 
-	bagangIDs := make([]string, len(bagangs))
-	bagangNames := make([]string, len(bagangs))
+	foundBagangIDs := make([]string, len(bagangs))
+	bagangNamesMap := make(map[string]string)
 	for i, b := range bagangs {
-		bagangIDs[i] = b.ID
-		bagangNames[i] = b.Name
+		foundBagangIDs[i] = b.ID
+		bagangNamesMap[b.ID] = b.Name
 	}
 
-	if len(bagangIDs) == 0 {
-		return nil, "", fiber.NewError(fiber.StatusBadRequest, "No bagangs found for this person")
+	if len(foundBagangIDs) == 0 {
+		return nil, "", fiber.NewError(fiber.StatusBadRequest, "No bagangs found for this selection")
 	}
 
-	// 4. Calculate Harvest Revenue (Active Season, Associated Bagangs)
+	// 4. Calculate Harvest Revenue
 	var harvests []entity.Harvest
-	if err := tx.Where("harvests_season = ? AND bagang_id IN ?", activeSeason.ID, bagangIDs).Find(&harvests).Error; err != nil {
+	if err := tx.Where("harvests_season = ? AND bagang_id IN ?", activeSeason.ID, foundBagangIDs).Order("harvest_date asc").Find(&harvests).Error; err != nil {
 		return nil, "", err
 	}
 
@@ -87,21 +91,39 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 		totalHarvestRevenue += int(float64(h.Price) * h.Weight)
 	}
 
-	// 5. Calculate Shared Costs (Active Season, Associated Bagangs, CreatorRole="both")
+	// 5. Calculate Shared Costs (Divided between worker and owner if they are different)
 	var sharedCosts []entity.ProductionCost
-	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND creator_role = 'both'", activeSeason.ID, bagangIDs).Find(&sharedCosts).Error; err != nil {
+	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND creator_role = 'both'", activeSeason.ID, foundBagangIDs).Order("created_at asc").Find(&sharedCosts).Error; err != nil {
 		return nil, "", err
 	}
 
-	totalSharedCost := 0
-	for _, cost := range sharedCosts {
-		totalSharedCost += cost.Price
+	// Map bagangs for quick lookup
+	bagangMap := make(map[string]entity.Bagang)
+	for _, b := range bagangs {
+		bagangMap[b.ID] = b
 	}
 
-	// 6. Calculate Self Costs (Active Season, Associated Bagangs, CreatedBy=workerID)
-	// Note: We scope to Bagangs to avoid mixing if they are involved in other unrelated Bagangs (though unlikely in this domain model, but safer)
+	totalSharedCostBurden := 0
+	type sharedCostDisplay struct {
+		cost   entity.ProductionCost
+		burden int
+	}
+	sharedCostDisplays := make([]sharedCostDisplay, len(sharedCosts))
+
+	for i, cost := range sharedCosts {
+		burden := cost.Price
+		b, exists := bagangMap[cost.BagangID]
+		if exists && b.WorkerID != b.OwnerID {
+			// Divide by 2 if worker and owner are different
+			burden = cost.Price / 2
+		}
+		totalSharedCostBurden += burden
+		sharedCostDisplays[i] = sharedCostDisplay{cost: cost, burden: burden}
+	}
+
+	// 6. Calculate Self Costs
 	var selfCosts []entity.ProductionCost
-	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND created_by = ?", activeSeason.ID, bagangIDs, workerID).Find(&selfCosts).Error; err != nil {
+	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND created_by = ?", activeSeason.ID, foundBagangIDs, workerID).Order("created_at asc").Find(&selfCosts).Error; err != nil {
 		return nil, "", err
 	}
 
@@ -111,7 +133,7 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 	}
 
 	// 7. Calculate Net
-	netPayroll := totalHarvestRevenue - totalSharedCost - totalSelfCost
+	netPayroll := totalHarvestRevenue - totalSharedCostBurden - totalSelfCost
 
 	// 8. Generate PDF
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -123,50 +145,104 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 	pdf.SetFont("Arial", "", 12)
 	pdf.Cell(40, 10, fmt.Sprintf("Nama: %s", worker.Name))
 	pdf.Ln(8)
-	pdf.Cell(40, 10, fmt.Sprintf("Tanggal: %s", time.Now().Format("02 Jan 2006")))
+	pdf.Cell(40, 10, fmt.Sprintf("Tanggal Cetak: %s", time.Now().Format("02 Jan 2006 15:04")))
 	pdf.Ln(8)
 	pdf.Cell(40, 10, fmt.Sprintf("Musim: %s", activeSeason.StartDate.Format("02 Jan 2006")))
+	if bagangID != "" && len(bagangs) > 0 {
+		pdf.Ln(8)
+		pdf.Cell(40, 10, fmt.Sprintf("Bagang: %s", bagangs[0].Name))
+	}
 	pdf.Ln(12)
 
-	// Summary Table
+	// --- 1. Detail Hasil Panen ---
 	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(100, 10, "Keterangan")
-	pdf.Cell(50, 10, "Jumlah (Rp)")
-	pdf.Ln(10)
-	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
-
-	pdf.SetFont("Arial", "", 12)
-	
-	// Harvest
-	pdf.Cell(100, 10, "Total Hasil Panen")
-	pdf.Cell(50, 10, fmt.Sprintf("%d", totalHarvestRevenue))
-	pdf.Ln(10)
-
-	// Shared Cost
-	pdf.Cell(100, 10, "Pengeluaran Umum (Bersama)")
-	pdf.Cell(50, 10, fmt.Sprintf("-%d", totalSharedCost))
-	pdf.Ln(10)
-
-	// Self Cost
-	pdf.Cell(100, 10, "Pengeluaran Pribadi")
-	pdf.Cell(50, 10, fmt.Sprintf("-%d", totalSelfCost))
-	pdf.Ln(10)
-
-	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(100, 10, "Total Bersih")
-	pdf.Cell(50, 10, fmt.Sprintf("Rp %d", netPayroll))
-	pdf.Ln(20)
-
-	// Bagang List
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(40, 10, "Bagang Terkait:")
+	pdf.Cell(40, 10, "Detail Hasil Panen:")
 	pdf.Ln(8)
-	pdf.SetFont("Arial", "", 12)
-	for _, name := range bagangNames {
-		pdf.Cell(40, 10, fmt.Sprintf("- %s", name))
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(30, 8, "Tanggal")
+	pdf.Cell(45, 8, "Jenis")
+	pdf.Cell(25, 8, "Berat (kg)")
+	pdf.Cell(35, 8, "Harga (Rp)")
+	pdf.Cell(40, 8, "Subtotal (Rp)")
+	pdf.Ln(8)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetFont("Arial", "", 10)
+
+	for _, h := range harvests {
+		subtotal := int(float64(h.Price) * h.Weight)
+		pdf.Cell(30, 8, h.HarvestDate.Format("02/01/2006"))
+		pdf.Cell(45, 8, h.HarvestType)
+		pdf.Cell(25, 8, fmt.Sprintf("%.2f", h.Weight))
+		pdf.Cell(35, 8, fmt.Sprintf("%d", h.Price))
+		pdf.Cell(40, 8, fmt.Sprintf("%d", subtotal))
 		pdf.Ln(6)
 	}
+	pdf.Ln(4)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(135, 8, "Total Pendapatan Panen")
+	pdf.Cell(40, 8, fmt.Sprintf("Rp %d", totalHarvestRevenue))
+	pdf.Ln(12)
+
+	// --- 2. Detail Pengeluaran Bersama (Shared) ---
+	pdf.SetFont("Arial", "B", 12)
+	pdf.Cell(40, 10, "Detail Pengeluaran Bersama: ")
+	pdf.Ln(8)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(25, 8, "Tanggal")
+	pdf.Cell(55, 8, "Jenis")
+	pdf.Cell(35, 8, "Bagang")
+	pdf.Cell(30, 8, "Total (Rp)")
+	pdf.Cell(35, 8, "Beban (Rp)")
+	pdf.Ln(8)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetFont("Arial", "", 10)
+
+	for _, scd := range sharedCostDisplays {
+		pdf.Cell(25, 8, scd.cost.CreatedAt.Format("02/01/2006"))
+		pdf.Cell(55, 8, scd.cost.ProductionCostType)
+		pdf.Cell(35, 8, bagangNamesMap[scd.cost.BagangID])
+		pdf.Cell(30, 8, fmt.Sprintf("%d", scd.cost.Price))
+		pdf.Cell(35, 8, fmt.Sprintf("%d", scd.burden))
+		pdf.Ln(6)
+	}
+	pdf.Ln(4)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(145, 8, "Total Beban Pengeluaran Bersama")
+	pdf.Cell(35, 8, fmt.Sprintf("Rp %d", totalSharedCostBurden))
+	pdf.Ln(12)
+
+	// --- 3. Detail Pengeluaran Pribadi ---
+	pdf.SetFont("Arial", "B", 12)
+	pdf.Cell(40, 10, "Detail Pengeluaran Pribadi:")
+	pdf.Ln(8)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(30, 8, "Tanggal")
+	pdf.Cell(60, 8, "Jenis")
+	pdf.Cell(50, 8, "Bagang")
+	pdf.Cell(40, 8, "Jumlah (Rp)")
+	pdf.Ln(8)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.SetFont("Arial", "", 10)
+
+	for _, cost := range selfCosts {
+		pdf.Cell(30, 8, cost.CreatedAt.Format("02/01/2006"))
+		pdf.Cell(60, 8, cost.ProductionCostType)
+		pdf.Cell(50, 8, bagangNamesMap[cost.BagangID])
+		pdf.Cell(40, 8, fmt.Sprintf("%d", cost.Price))
+		pdf.Ln(6)
+	}
+	pdf.Ln(4)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(140, 8, "Total Pengeluaran Pribadi")
+	pdf.Cell(40, 8, fmt.Sprintf("Rp %d", totalSelfCost))
+	pdf.Ln(15)
+
+	// --- Final Summary ---
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.Cell(140, 12, "TOTAL BERSIH (NET)")
+	pdf.Cell(40, 12, fmt.Sprintf("Rp %d", netPayroll))
+	pdf.Ln(20)
 
 	if pdf.Error() != nil {
 		c.Log.WithError(pdf.Error()).Error("error generating PDF content")
