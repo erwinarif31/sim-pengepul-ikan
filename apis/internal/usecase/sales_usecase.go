@@ -257,33 +257,44 @@ func (c *SalesUseCase) DeletePayment(ctx context.Context, paymentId int) (*model
 }
 
 func (c *SalesUseCase) recalculateStatusAndReturn(ctx context.Context, salesId int) (*model.SalesResponse, error) {
-	// Re-fetch everything with preloads
-	tx := c.DB.WithContext(ctx).Preload("SalesDetails").Preload("TransactionDetails")
+	// Re-fetch everything with preloads using a fresh transaction to ensure we have the latest committed data
+	// or use the current context's DB if needed.
+	db := c.DB.WithContext(ctx)
 	sales := new(entity.Sales)
-	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
+	if err := c.SalesRepository.FindById(db.Preload("SalesDetails").Preload("TransactionDetails"), sales, salesId); err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
 	response := converter.SalesToResponse(sales)
 
 	// Check if fully paid
-	if response.TotalPaid >= response.TotalAmount && response.TotalAmount > 0 {
-		if !sales.IsPaidOff {
+	shouldBePaidOff := response.TotalPaid >= response.TotalAmount && response.TotalAmount > 0
+	
+	if shouldBePaidOff != sales.IsPaidOff {
+		tx := c.DB.WithContext(ctx).Begin()
+		defer tx.Rollback()
+
+		if shouldBePaidOff {
 			now := time.Now()
 			sales.IsPaidOff = true
 			sales.PaidOffAt = &now
-			c.SalesRepository.Update(tx, sales)
-			response.IsPaidOff = true
-			response.PaidOffAt = &now
-		}
-	} else {
-		if sales.IsPaidOff {
+		} else {
 			sales.IsPaidOff = false
 			sales.PaidOffAt = nil
-			c.SalesRepository.Update(tx, sales)
-			response.IsPaidOff = false
-			response.PaidOffAt = nil
 		}
+
+		if err := c.SalesRepository.Update(tx, sales); err != nil {
+			c.Log.WithError(err).Error("error updating sales status")
+			return nil, fiber.ErrInternalServerError
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			return nil, fiber.ErrInternalServerError
+		}
+		
+		// Update response to match new state
+		response.IsPaidOff = sales.IsPaidOff
+		response.PaidOffAt = sales.PaidOffAt
 	}
 
 	return response, nil
