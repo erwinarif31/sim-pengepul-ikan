@@ -23,6 +23,8 @@ type RouteConfig struct {
 
 	PayrollController        *http.PayrollController
 
+	DashboardController      *http.DashboardController
+
 	// AuthMiddleware    fiber.Handler
 
 }
@@ -157,6 +159,12 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 		c.App.Get("/api/payroll/:workerId", c.PayrollController.GeneratePDF)
 
+		// Dashboard routes
+		c.App.Get("/api/dashboard/metrics", c.DashboardController.GetMetrics)
+		c.App.Get("/api/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)
+		c.App.Get("/api/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
+		c.App.Get("/api/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
+		c.App.Get("/api/dashboard/recent-sales", c.DashboardController.GetRecentSales)
 	}
 
 func (c *RouteConfig) SetupAuthRoute() {
