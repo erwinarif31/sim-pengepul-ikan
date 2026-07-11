@@ -13,7 +13,11 @@ func NewFiber(config *viper.Viper) *fiber.App {
 		Prefork:      config.GetBool("web.prefork"),
 	})
 
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: config.GetString("web.cors.origins"),
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+	}))
 
 	return app
 }
@@ -24,9 +28,13 @@ func NewErrorHandler() fiber.ErrorHandler {
 		if e, ok := err.(*fiber.Error); ok {
 			code = e.Code
 		}
+		message := err.Error()
+		if code == fiber.StatusInternalServerError {
+			message = "Internal Server Error"
+		}
 
 		return ctx.Status(code).JSON(fiber.Map{
-			"errors": err.Error(),
+			"errors": message,
 		})
 	}
 }

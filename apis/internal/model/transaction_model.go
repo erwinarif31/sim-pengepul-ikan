@@ -29,20 +29,21 @@ type ProductionCostResponse struct {
 }
 
 type CreateHarvestRequest struct {
-	HarvestDate string    `json:"harvest_date" validate:"required"`
-	Weight      float64   `json:"weight" validate:"required,min=0"`
-	Price       int       `json:"price" validate:"required,min=0"`
-	BagangID    string    `json:"bagang_id" validate:"required,uuid"`
-	HarvestType string    `json:"harvest_type" validate:"required"`
-	Description string    `json:"description"`
+	HarvestDate string  `json:"harvest_date" validate:"required"`
+	Weight      float64 `json:"weight" validate:"required,min=0"`
+	Price       int     `json:"price" validate:"required,min=0"`
+	BagangID    string  `json:"bagang_id" validate:"required,uuid"`
+	HarvestType string  `json:"harvest_type" validate:"required"`
+	Description string  `json:"description"`
+	CreatedBy   string  `json:"created_by" validate:"omitempty,uuid"`
 }
 
 type UpdateHarvestRequest struct {
-	HarvestDate string  `json:"harvest_date"`
-	Weight      float64 `json:"weight" validate:"min=0"`
-	Price       int       `json:"price" validate:"min=0"`
-	HarvestType string    `json:"harvest_type"`
-	Description string    `json:"description"`
+	HarvestDate string   `json:"harvest_date"`
+	Weight      *float64 `json:"weight" validate:"omitempty,min=0"`
+	Price       *int     `json:"price" validate:"omitempty,min=0"`
+	HarvestType string   `json:"harvest_type"`
+	Description *string  `json:"description"`
 }
 
 type CreateProductionCostRequest struct {
@@ -54,6 +55,6 @@ type CreateProductionCostRequest struct {
 
 type UpdateProductionCostRequest struct {
 	ProductionCostType string `json:"production_costs_type"`
-	Price              int    `json:"price" validate:"min=0"`
+	Price              *int   `json:"price" validate:"omitempty,min=0"`
 	CreatorRole        string `json:"creator_role" validate:"omitempty,oneof=worker owner both"`
 }

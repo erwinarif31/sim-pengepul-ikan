@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
+	"github.com/gofiber/fiber/v2"
 )
 
 func NewAuth(userUserCase *usecase.UserUseCase) fiber.Handler {

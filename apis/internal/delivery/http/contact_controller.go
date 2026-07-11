@@ -1,11 +1,11 @@
 package http
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"math"
 )
 

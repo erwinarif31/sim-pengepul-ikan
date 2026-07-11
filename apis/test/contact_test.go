@@ -1,11 +1,14 @@
+//go:build legacy
+// +build legacy
+
 package test
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/model"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"

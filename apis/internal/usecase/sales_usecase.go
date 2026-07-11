@@ -99,6 +99,11 @@ func (c *SalesUseCase) AddSalesItem(ctx context.Context, salesId int, request *m
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
 	// Verify Sale exists
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
@@ -118,29 +123,34 @@ func (c *SalesUseCase) AddSalesItem(ctx context.Context, salesId int, request *m
 		return nil, fiber.ErrInternalServerError
 	}
 
-	// Re-fetch sale to check payment status (optional here, but good practice if logic becomes complex)
-	// For now just adding item doesn't change Paid status unless we want to AUTO-UNPAY if total grows?
-	// Requirement: "Payment logic... user can add multiple payment until all total payment paid off."
-	// If we add an item, the total grows. If it was paid off, it might become unpaid.
-	// Let's re-evaluate status.
+	response, err := c.recalculateStatus(tx, salesId)
+	if err != nil {
+		return nil, err
+	}
 
-	// But first, commit the item creation.
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	// Fetch updated sale to calculate and potentially update status
-	return c.recalculateStatusAndReturn(ctx, salesId)
+	return response, nil
 }
 
 func (c *SalesUseCase) AddPayment(ctx context.Context, salesId int, request *model.CreatePaymentRequest) (*model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
 	// Verify Sale exists
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
 		return nil, fiber.ErrNotFound
+	}
+	if err := c.validatePaymentAmount(tx, salesId, request.Amount, 0); err != nil {
+		return nil, err
 	}
 
 	// Create Transaction
@@ -155,16 +165,26 @@ func (c *SalesUseCase) AddPayment(ctx context.Context, salesId int, request *mod
 		return nil, fiber.ErrInternalServerError
 	}
 
+	response, err := c.recalculateStatus(tx, salesId)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return c.recalculateStatusAndReturn(ctx, salesId)
+	return response, nil
 }
 
 func (c *SalesUseCase) UpdateSalesItem(ctx context.Context, itemId int, request *model.CreateSalesItemRequest) (*model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
+
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
 
 	detail := new(entity.SalesDetail)
 	if err := c.SalesDetailRepository.FindById(tx, detail, itemId); err != nil {
@@ -180,11 +200,16 @@ func (c *SalesUseCase) UpdateSalesItem(ctx context.Context, itemId int, request 
 		return nil, fiber.ErrInternalServerError
 	}
 
+	response, err := c.recalculateStatus(tx, detail.SalesID)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return c.recalculateStatusAndReturn(ctx, detail.SalesID)
+	return response, nil
 }
 
 func (c *SalesUseCase) DeleteSalesItem(ctx context.Context, itemId int) (*model.SalesResponse, error) {
@@ -203,20 +228,33 @@ func (c *SalesUseCase) DeleteSalesItem(ctx context.Context, itemId int) (*model.
 		return nil, fiber.ErrInternalServerError
 	}
 
+	response, err := c.recalculateStatus(tx, salesId)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return c.recalculateStatusAndReturn(ctx, salesId)
+	return response, nil
 }
 
 func (c *SalesUseCase) UpdatePayment(ctx context.Context, paymentId int, request *model.CreatePaymentRequest) (*model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
 	payment := new(entity.TransactionDetail)
 	if err := c.TransactionDetailRepository.FindById(tx, payment, paymentId); err != nil {
 		return nil, fiber.ErrNotFound
+	}
+	if err := c.validatePaymentAmount(tx, payment.SalesID, request.Amount, paymentId); err != nil {
+		return nil, err
 	}
 
 	payment.Amount = request.Amount
@@ -226,11 +264,16 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, paymentId int, request
 		return nil, fiber.ErrInternalServerError
 	}
 
+	response, err := c.recalculateStatus(tx, payment.SalesID)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return c.recalculateStatusAndReturn(ctx, payment.SalesID)
+	return response, nil
 }
 
 func (c *SalesUseCase) DeletePayment(ctx context.Context, paymentId int) (*model.SalesResponse, error) {
@@ -249,17 +292,19 @@ func (c *SalesUseCase) DeletePayment(ctx context.Context, paymentId int) (*model
 		return nil, fiber.ErrInternalServerError
 	}
 
+	response, err := c.recalculateStatus(tx, salesId)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return c.recalculateStatusAndReturn(ctx, salesId)
+	return response, nil
 }
 
-func (c *SalesUseCase) recalculateStatusAndReturn(ctx context.Context, salesId int) (*model.SalesResponse, error) {
-	// Re-fetch everything with preloads using a fresh transaction to ensure we have the latest committed data
-	// or use the current context's DB if needed.
-	db := c.DB.WithContext(ctx)
+func (c *SalesUseCase) recalculateStatus(db *gorm.DB, salesId int) (*model.SalesResponse, error) {
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(db.Preload("SalesDetails").Preload("TransactionDetails"), sales, salesId); err != nil {
 		return nil, fiber.ErrInternalServerError
@@ -269,33 +314,53 @@ func (c *SalesUseCase) recalculateStatusAndReturn(ctx context.Context, salesId i
 
 	// Check if fully paid
 	shouldBePaidOff := response.TotalPaid >= response.TotalAmount && response.TotalAmount > 0
-	
-	if shouldBePaidOff != sales.IsPaidOff {
-		tx := c.DB.WithContext(ctx).Begin()
-		defer tx.Rollback()
 
+	if shouldBePaidOff != sales.IsPaidOff {
+		var paidOffAt *time.Time
 		if shouldBePaidOff {
 			now := time.Now()
-			sales.IsPaidOff = true
-			sales.PaidOffAt = &now
-		} else {
-			sales.IsPaidOff = false
-			sales.PaidOffAt = nil
+			paidOffAt = &now
 		}
 
-		if err := c.SalesRepository.Update(tx, sales); err != nil {
+		if err := db.Model(&entity.Sales{}).Where("id = ?", salesId).Updates(map[string]any{
+			"is_paid_off": shouldBePaidOff,
+			"paid_off_at": paidOffAt,
+		}).Error; err != nil {
 			c.Log.WithError(err).Error("error updating sales status")
 			return nil, fiber.ErrInternalServerError
 		}
 
-		if err := tx.Commit().Error; err != nil {
-			return nil, fiber.ErrInternalServerError
-		}
-		
 		// Update response to match new state
-		response.IsPaidOff = sales.IsPaidOff
-		response.PaidOffAt = sales.PaidOffAt
+		response.IsPaidOff = shouldBePaidOff
+		response.PaidOffAt = paidOffAt
 	}
 
 	return response, nil
+}
+
+func (c *SalesUseCase) validatePaymentAmount(db *gorm.DB, salesId int, amount int, ignoredPaymentId int) error {
+	sales := new(entity.Sales)
+	if err := c.SalesRepository.FindById(db.Preload("SalesDetails").Preload("TransactionDetails"), sales, salesId); err != nil {
+		return fiber.ErrNotFound
+	}
+
+	response := converter.SalesToResponse(sales)
+	if response.TotalAmount <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "sale has no payable items")
+	}
+
+	totalPaid := response.TotalPaid
+	if ignoredPaymentId != 0 {
+		for _, transaction := range sales.TransactionDetails {
+			if transaction.ID == ignoredPaymentId {
+				totalPaid -= transaction.Amount
+				break
+			}
+		}
+	}
+
+	if totalPaid+amount > response.TotalAmount {
+		return fiber.NewError(fiber.StatusBadRequest, "payment exceeds remaining balance")
+	}
+	return nil
 }

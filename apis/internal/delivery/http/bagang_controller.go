@@ -81,8 +81,6 @@ func (c *BagangController) Search(ctx *fiber.Ctx) error {
 
 	}
 
-
-
 	responses, err := c.BagangUseCase.Search(ctx.UserContext(), request)
 
 	if err != nil {
@@ -94,7 +92,6 @@ func (c *BagangController) Search(ctx *fiber.Ctx) error {
 	return ctx.JSON(model.WebResponse[[]model.BagangResponse]{
 
 		Data: responses,
-
 	})
 
 }

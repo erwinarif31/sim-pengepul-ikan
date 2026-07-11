@@ -70,6 +70,7 @@ func Bootstrap(config *BootstrapConfig) {
 	masterDataUseCase := usecase.NewMasterDataUseCase(
 		config.DB,
 		config.Log,
+		config.Validate,
 		harvestTypeRepository,
 		productionCostTypeRepository,
 		workerRepository,
@@ -78,12 +79,15 @@ func Bootstrap(config *BootstrapConfig) {
 	harvestUseCase := usecase.NewHarvestUseCase(
 		config.DB,
 		config.Log,
+		config.Validate,
 		harvestRepository,
 		seasonRepository,
+		bagangRepository,
 	)
 	productionCostUseCase := usecase.NewProductionCostUseCase(
 		config.DB,
 		config.Log,
+		config.Validate,
 		productionCostRepository,
 		seasonRepository,
 		bagangRepository,

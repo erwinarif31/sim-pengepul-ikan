@@ -313,7 +313,7 @@ func seedProductionCosts(db *gorm.DB, bagangs []BagangInfo) int {
 }
 
 // seedSales creates ~9 sales with details and transaction details
-func seedSales(db *gorm.DB, ) int {
+func seedSales(db *gorm.DB) int {
 	count := 0
 	totalSales := 9
 

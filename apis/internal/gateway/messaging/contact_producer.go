@@ -2,8 +2,8 @@ package messaging
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/sirupsen/logrus"
 	"github.com/erwinarif31/catchery-api/internal/model"
+	"github.com/sirupsen/logrus"
 )
 
 type ContactProducer struct {

@@ -2,12 +2,14 @@ package usecase
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/model/converter"
 	"github.com/erwinarif31/catchery-api/internal/repository"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,6 +19,7 @@ import (
 type MasterDataUseCase struct {
 	DB                           *gorm.DB
 	Log                          *logrus.Logger
+	Validate                     *validator.Validate
 	HarvestTypeRepository        *repository.HarvestTypeRepository
 	ProductionCostTypeRepository *repository.ProductionCostTypeRepository
 	WorkerRepository             *repository.WorkerRepository
@@ -26,6 +29,7 @@ type MasterDataUseCase struct {
 func NewMasterDataUseCase(
 	db *gorm.DB,
 	log *logrus.Logger,
+	validate *validator.Validate,
 	harvestTypeRepo *repository.HarvestTypeRepository,
 	productionCostTypeRepo *repository.ProductionCostTypeRepository,
 	workerRepo *repository.WorkerRepository,
@@ -34,6 +38,7 @@ func NewMasterDataUseCase(
 	return &MasterDataUseCase{
 		DB:                           db,
 		Log:                          log,
+		Validate:                     validate,
 		HarvestTypeRepository:        harvestTypeRepo,
 		ProductionCostTypeRepository: productionCostTypeRepo,
 		WorkerRepository:             workerRepo,
@@ -101,8 +106,19 @@ func (c *MasterDataUseCase) CreateHarvestType(ctx context.Context, request *mode
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.DB.WithContext(ctx).Where("name = ?", request.Name).First(&entity.HarvestType{}).Error; err == nil {
+	request.Name = strings.TrimSpace(request.Name)
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
+	err := tx.Where("name = ?", request.Name).First(&entity.HarvestType{}).Error
+	if err == nil {
 		return nil, fiber.NewError(fiber.StatusConflict, "Harvest Type already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		c.Log.WithError(err).Error("error checking harvest type")
+		return nil, fiber.ErrInternalServerError
 	}
 
 	entity := &entity.HarvestType{
@@ -144,8 +160,19 @@ func (c *MasterDataUseCase) CreateProductionCostType(ctx context.Context, reques
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.DB.WithContext(ctx).Where("name = ?", request.Name).First(&entity.ProductionCostType{}).Error; err == nil {
+	request.Name = strings.ToUpper(strings.TrimSpace(request.Name))
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
+	err := tx.Where("name = ?", request.Name).First(&entity.ProductionCostType{}).Error
+	if err == nil {
 		return nil, fiber.NewError(fiber.StatusConflict, "Production Cost Type already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		c.Log.WithError(err).Error("error checking production cost type")
+		return nil, fiber.ErrInternalServerError
 	}
 
 	entity := &entity.ProductionCostType{
@@ -187,6 +214,12 @@ func (c *MasterDataUseCase) CreateWorker(ctx context.Context, request *model.Cre
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	request.Name = strings.TrimSpace(request.Name)
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
+
 	entity := &entity.Worker{
 		Name: request.Name,
 	}
@@ -217,6 +250,12 @@ func (c *MasterDataUseCase) CreateWorker(ctx context.Context, request *model.Cre
 func (c *MasterDataUseCase) UpdateWorker(ctx context.Context, id string, request *model.CreateMasterDataRequest) (*model.WorkerResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
+
+	request.Name = strings.TrimSpace(request.Name)
+	if err := c.Validate.Struct(request); err != nil {
+		c.Log.WithError(err).Error("error validating request body")
+		return nil, fiber.ErrBadRequest
+	}
 
 	entity := new(entity.Worker)
 	if err := c.WorkerRepository.FindById(tx, entity, id); err != nil {
@@ -271,6 +310,12 @@ func (c *MasterDataUseCase) EndCurrentSeason(ctx context.Context) error {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	// ponytail: Postgres transaction lock avoids duplicate active seasons without adding a migration.
+	if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", 9112026).Error; err != nil {
+		c.Log.WithError(err).Error("error locking season rollover")
+		return fiber.ErrInternalServerError
+	}
+
 	// 1. Find active season (end_date is NULL)
 	var activeSeason entity.Season
 	if err := tx.Where("end_date IS NULL").First(&activeSeason).Error; err != nil {
@@ -278,8 +323,8 @@ func (c *MasterDataUseCase) EndCurrentSeason(ctx context.Context) error {
 			c.Log.WithError(err).Error("error finding active season")
 			return fiber.ErrInternalServerError
 		}
-		// If no active season found, we might just want to start a new one? 
-		// Or it's an error? Assuming we proceed to create one if none exists is safer 
+		// If no active season found, we might just want to start a new one?
+		// Or it's an error? Assuming we proceed to create one if none exists is safer
 		// but let's stick to the requirement: "populate active season end date".
 	}
 

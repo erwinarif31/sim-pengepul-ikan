@@ -121,15 +121,15 @@ func (c *DashboardUseCase) GetMetrics(ctx context.Context, seasonID int) (*model
 	}
 
 	return &model.DashboardMetricsResponse{
-		TotalHarvestRevenue:  totalHarvestRevenue,
-		TotalCosts:           totalCosts,
-		TotalSalesRevenue:    totalSalesRevenue,
-		TotalPaid:            totalPaid,
-		AccountsReceivable:   accountsReceivable,
-		NetProfit:            netProfit,
-		ProfitMargin:         profitMargin,
-		AvgProfitPerBagang:   avgProfitPerBagang,
-		ActiveBagangCount:    activeBagangCount,
+		TotalHarvestRevenue: totalHarvestRevenue,
+		TotalCosts:          totalCosts,
+		TotalSalesRevenue:   totalSalesRevenue,
+		TotalPaid:           totalPaid,
+		AccountsReceivable:  accountsReceivable,
+		NetProfit:           netProfit,
+		ProfitMargin:        profitMargin,
+		AvgProfitPerBagang:  avgProfitPerBagang,
+		ActiveBagangCount:   activeBagangCount,
 	}, nil
 }
 

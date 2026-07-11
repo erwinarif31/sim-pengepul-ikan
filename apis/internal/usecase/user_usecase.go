@@ -2,15 +2,15 @@ package usecase
 
 import (
 	"context"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/gateway/messaging"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/model/converter"
 	"github.com/erwinarif31/catchery-api/internal/repository"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )

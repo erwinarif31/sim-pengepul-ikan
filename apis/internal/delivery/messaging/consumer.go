@@ -30,10 +30,10 @@ func ConsumeTopic(ctx context.Context, consumer *kafka.Consumer, topic string, l
 				} else {
 					_, err = consumer.CommitMessage(message)
 					if err != nil {
-						log.Fatalf("Failed to commit message: %v", err)
+						log.Errorf("Failed to commit message: %v", err)
 					}
 				}
-			} else if !err.(kafka.Error).IsTimeout() {
+			} else if kafkaErr, ok := err.(kafka.Error); !ok || !kafkaErr.IsTimeout() {
 				log.Warnf("Consumer error: %v (%v)\n", err, message)
 			}
 		}
@@ -42,6 +42,6 @@ func ConsumeTopic(ctx context.Context, consumer *kafka.Consumer, topic string, l
 	log.Infof("Closing consumer for topic : %s", topic)
 	err = consumer.Close()
 	if err != nil {
-		panic(err)
+		log.Errorf("Failed to close consumer: %v", err)
 	}
 }

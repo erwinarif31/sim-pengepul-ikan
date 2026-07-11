@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/erwinarif31/catchery-api/internal/config"
 	"github.com/erwinarif31/catchery-api/internal/delivery/messaging"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	"syscall"

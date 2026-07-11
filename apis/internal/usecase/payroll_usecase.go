@@ -123,7 +123,7 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 
 	// 6. Calculate Self Costs
 	var selfCosts []entity.ProductionCost
-	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND created_by = ?", activeSeason.ID, foundBagangIDs, workerID).Order("created_at asc").Find(&selfCosts).Error; err != nil {
+	if err := tx.Where("production_costs_season = ? AND bagang_id IN ? AND created_by = ? AND creator_role <> 'both'", activeSeason.ID, foundBagangIDs, workerID).Order("created_at asc").Find(&selfCosts).Error; err != nil {
 		return nil, "", err
 	}
 

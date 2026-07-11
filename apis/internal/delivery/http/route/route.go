@@ -6,30 +6,27 @@ import (
 )
 
 type RouteConfig struct {
+	App *fiber.App
 
-	App                      *fiber.App
+	BagangController *http.BagangController
 
-	BagangController         *http.BagangController
+	SalesController *http.SalesController
 
-	SalesController          *http.SalesController
+	MasterDataController *http.MasterDataController
 
-	MasterDataController     *http.MasterDataController
-
-	HarvestController        *http.HarvestController
+	HarvestController *http.HarvestController
 
 	ProductionCostController *http.ProductionCostController
 
-	CustomerController       *http.CustomerController
+	CustomerController *http.CustomerController
 
-	PayrollController        *http.PayrollController
+	PayrollController *http.PayrollController
 
-	DashboardController      *http.DashboardController
+	DashboardController *http.DashboardController
 
 	// AuthMiddleware    fiber.Handler
 
 }
-
-
 
 func (c *RouteConfig) Setup() {
 
@@ -39,59 +36,49 @@ func (c *RouteConfig) Setup() {
 
 }
 
-
-
 func (c *RouteConfig) SetupGuestRoute() {
 
 	// c.App.Post("/api/users", c.UserController.Register)
 
 	// c.App.Post("/api/users/_login", c.UserController.Login)
 
-		c.App.Post("/api/bagang", c.BagangController.Create)
+	c.App.Post("/api/bagang", c.BagangController.Create)
 
-		c.App.Put("/api/bagang/:id", c.BagangController.Update)
+	c.App.Put("/api/bagang/:id", c.BagangController.Update)
 
-		c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
+	c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
 
-		c.App.Get("/api/bagang/:id", c.BagangController.FindById)
+	c.App.Get("/api/bagang/:id", c.BagangController.FindById)
 
-		c.App.Get("/api/bagang", c.BagangController.Search)
+	c.App.Get("/api/bagang", c.BagangController.Search)
 
-	
+	c.App.Get("/api/sales", c.SalesController.Search)
 
-		c.App.Get("/api/sales", c.SalesController.Search)
+	c.App.Get("/api/sales/:id", c.SalesController.FindById)
 
-			c.App.Get("/api/sales/:id", c.SalesController.FindById)
+	c.App.Post("/api/sales/:id/items", c.SalesController.AddSalesItem)
 
-			c.App.Post("/api/sales/:id/items", c.SalesController.AddSalesItem)
+	c.App.Put("/api/sales/items/:id", c.SalesController.UpdateSalesItem)
 
-			c.App.Put("/api/sales/items/:id", c.SalesController.UpdateSalesItem)
+	c.App.Delete("/api/sales/items/:id", c.SalesController.DeleteSalesItem)
 
-			c.App.Delete("/api/sales/items/:id", c.SalesController.DeleteSalesItem)
+	c.App.Post("/api/sales/:id/payments", c.SalesController.AddPayment)
 
-			c.App.Post("/api/sales/:id/payments", c.SalesController.AddPayment)
+	c.App.Put("/api/sales/payments/:id", c.SalesController.UpdatePayment)
 
-			c.App.Put("/api/sales/payments/:id", c.SalesController.UpdatePayment)
+	c.App.Delete("/api/sales/payments/:id", c.SalesController.DeletePayment)
 
-			c.App.Delete("/api/sales/payments/:id", c.SalesController.DeletePayment)
-
-		
-
-			c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
+	c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
 
 	c.App.Post("/api/harvest-types", c.MasterDataController.CreateHarvestType)
 
 	c.App.Delete("/api/harvest-types/:name", c.MasterDataController.DeleteHarvestType)
-
-
 
 	c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
 
 	c.App.Post("/api/production-cost-types", c.MasterDataController.CreateProductionCostType)
 
 	c.App.Delete("/api/production-cost-types/:name", c.MasterDataController.DeleteProductionCostType)
-
-
 
 	c.App.Get("/api/workers", c.MasterDataController.SearchWorkers)
 
@@ -103,69 +90,45 @@ func (c *RouteConfig) SetupGuestRoute() {
 
 	c.App.Get("/api/workers/:id", c.MasterDataController.FindWorkerById)
 
-
-
 	c.App.Get("/api/seasons", c.MasterDataController.SearchSeasons)
 
 	c.App.Post("/api/seasons/end", c.MasterDataController.EndSeason)
 
+	c.App.Get("/api/bagang/:id/harvests", c.HarvestController.SearchByBagangId)
 
+	c.App.Post("/api/harvests", c.HarvestController.Create)
 
-		c.App.Get("/api/bagang/:id/harvests", c.HarvestController.SearchByBagangId)
+	c.App.Put("/api/harvests/:id", c.HarvestController.Update)
 
+	c.App.Delete("/api/harvests/:id", c.HarvestController.Delete)
 
+	c.App.Get("/api/bagang/:id/production-costs", c.ProductionCostController.SearchByBagangId)
 
-		c.App.Post("/api/harvests", c.HarvestController.Create)
+	c.App.Post("/api/production-costs", c.ProductionCostController.Create)
 
+	c.App.Put("/api/production-costs/:id", c.ProductionCostController.Update)
 
+	c.App.Delete("/api/production-costs/:id", c.ProductionCostController.Delete)
 
-		c.App.Put("/api/harvests/:id", c.HarvestController.Update)
+	c.App.Post("/api/customers", c.CustomerController.Create)
 
+	c.App.Put("/api/customers/:id", c.CustomerController.Update)
 
+	c.App.Delete("/api/customers/:id", c.CustomerController.Delete)
 
-		c.App.Delete("/api/harvests/:id", c.HarvestController.Delete)
+	c.App.Get("/api/customers/:id", c.CustomerController.FindById)
 
+	c.App.Get("/api/customers", c.CustomerController.Search)
 
+	c.App.Get("/api/payroll/:workerId", c.PayrollController.GeneratePDF)
 
-	
-
-
-
-		c.App.Get("/api/bagang/:id/production-costs", c.ProductionCostController.SearchByBagangId)
-
-
-
-		c.App.Post("/api/production-costs", c.ProductionCostController.Create)
-
-
-
-		c.App.Put("/api/production-costs/:id", c.ProductionCostController.Update)
-
-
-
-		c.App.Delete("/api/production-costs/:id", c.ProductionCostController.Delete)
-
-
-
-		c.App.Post("/api/customers", c.CustomerController.Create)
-
-		c.App.Put("/api/customers/:id", c.CustomerController.Update)
-
-		c.App.Delete("/api/customers/:id", c.CustomerController.Delete)
-
-		c.App.Get("/api/customers/:id", c.CustomerController.FindById)
-
-		c.App.Get("/api/customers", c.CustomerController.Search)
-
-		c.App.Get("/api/payroll/:workerId", c.PayrollController.GeneratePDF)
-
-		// Dashboard routes
-		c.App.Get("/api/dashboard/metrics", c.DashboardController.GetMetrics)
-		c.App.Get("/api/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)
-		c.App.Get("/api/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
-		c.App.Get("/api/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
-		c.App.Get("/api/dashboard/recent-sales", c.DashboardController.GetRecentSales)
-	}
+	// Dashboard routes
+	c.App.Get("/api/dashboard/metrics", c.DashboardController.GetMetrics)
+	c.App.Get("/api/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)
+	c.App.Get("/api/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
+	c.App.Get("/api/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
+	c.App.Get("/api/dashboard/recent-sales", c.DashboardController.GetRecentSales)
+}
 
 func (c *RouteConfig) SetupAuthRoute() {
 }

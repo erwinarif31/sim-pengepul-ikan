@@ -2,15 +2,15 @@ package model
 
 // DashboardMetricsResponse represents the KPI overview cards
 type DashboardMetricsResponse struct {
-	TotalHarvestRevenue  int     `json:"total_harvest_revenue"`  // Total Panen - money paid to workers/owners
-	TotalCosts           int     `json:"total_costs"`            // Biaya Produksi - operational costs (informational, subset of harvest)
-	TotalSalesRevenue    int     `json:"total_sales_revenue"`    // Total Penjualan - income from selling
-	TotalPaid            int     `json:"total_paid"`             // Total payments received from customers
-	AccountsReceivable   int     `json:"accounts_receivable"`    // Piutang - unpaid sales (TotalSalesRevenue - TotalPaid)
-	NetProfit            int     `json:"net_profit"`             // Laba Bersih - (TotalSalesRevenue - TotalHarvestRevenue)
-	ProfitMargin         float64 `json:"profit_margin"`          // Margin % - (NetProfit / TotalSalesRevenue) * 100
-	AvgProfitPerBagang   int     `json:"avg_profit_per_bagang"`  // Rata-rata Laba/Bagang
-	ActiveBagangCount    int     `json:"active_bagang_count"`    // Jumlah Bagang Aktif (with harvests in season)
+	TotalHarvestRevenue int     `json:"total_harvest_revenue"` // Total Panen - money paid to workers/owners
+	TotalCosts          int     `json:"total_costs"`           // Biaya Produksi - operational costs (informational, subset of harvest)
+	TotalSalesRevenue   int     `json:"total_sales_revenue"`   // Total Penjualan - income from selling
+	TotalPaid           int     `json:"total_paid"`            // Total payments received from customers
+	AccountsReceivable  int     `json:"accounts_receivable"`   // Piutang - unpaid sales (TotalSalesRevenue - TotalPaid)
+	NetProfit           int     `json:"net_profit"`            // Laba Bersih - (TotalSalesRevenue - TotalHarvestRevenue)
+	ProfitMargin        float64 `json:"profit_margin"`         // Margin % - (NetProfit / TotalSalesRevenue) * 100
+	AvgProfitPerBagang  int     `json:"avg_profit_per_bagang"` // Rata-rata Laba/Bagang
+	ActiveBagangCount   int     `json:"active_bagang_count"`   // Jumlah Bagang Aktif (with harvests in season)
 }
 
 // HarvestTrendItem represents a single month's harvest data

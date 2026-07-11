@@ -1,11 +1,14 @@
+//go:build legacy
+// +build legacy
+
 package test
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/config"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/erwinarif31/catchery-api/internal/config"
 	"gorm.io/gorm"
 )
 

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"log"
 
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/model"
@@ -10,6 +9,7 @@ import (
 	"github.com/erwinarif31/catchery-api/internal/repository"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -48,6 +48,7 @@ func (b *BagangUseCase) Create(
 	}
 
 	bagang := &entity.Bagang{
+		ID:       uuid.New().String(),
 		Name:     request.Name,
 		Isactive: request.IsActive,
 		WorkerID: request.WorkerID,
@@ -63,7 +64,6 @@ func (b *BagangUseCase) Create(
 		b.Log.WithError(err).Error("error creating bagang")
 		return nil, fiber.ErrInternalServerError
 	}
-	log.Println("test")
 	return converter.BagangToResponse(bagang), nil
 }
 

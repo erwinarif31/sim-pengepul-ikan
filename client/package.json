@@ -1,12 +1,12 @@
 {
   "name": "tailadmin-react",
   "private": true,
-  "proxy": "localhost:8081",
   "version": "2.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -33,6 +33,7 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.5",
     "react-helmet-async": "^2.0.5",
+    "react-hook-form": "^7.81.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.6.3",
     "simplebar-react": "^3.3.0",

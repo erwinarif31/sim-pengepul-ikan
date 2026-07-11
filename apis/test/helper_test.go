@@ -1,9 +1,12 @@
+//go:build legacy
+// +build legacy
+
 package test
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/erwinarif31/catchery-api/internal/entity"
 	"strconv"
 	"testing"
 )

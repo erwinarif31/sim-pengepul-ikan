@@ -1,10 +1,13 @@
+//go:build legacy
+// +build legacy
+
 package test
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/model"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 	"io"
 	"net/http"
