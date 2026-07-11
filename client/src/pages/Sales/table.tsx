@@ -47,6 +47,7 @@ const SalesTable = () => {
             title: "ID",
             sortable: true,
             columnClassName: "w-1/12",
+            hideOnMobile: true,
         },
         {
             key: "customer",
@@ -59,6 +60,7 @@ const SalesTable = () => {
             title: "Tanggal",
             sortable: true,
             columnClassName: "w-1/4",
+            hideOnMobile: true,
             render: (row) => new Date(row.issued_at).toLocaleDateString("id-ID"),
         },
         {
@@ -85,6 +87,7 @@ const SalesTable = () => {
         {
             key: "actions",
             title: "Detail",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center">
                     <Link
@@ -94,6 +97,14 @@ const SalesTable = () => {
                         <EyeIcon className="size-5" />
                     </Link>
                 </div>
+            ),
+            mobileRender: (row) => (
+                <Link
+                    to={`/penjualan/${row.id}`}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg text-center"
+                >
+                    Lihat Detail
+                </Link>
             ),
         },
     ];
@@ -108,11 +119,12 @@ const SalesTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
-            <div className="flex justify-end mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
                 <Button
                     size="sm"
                     variant="primary"
                     onClick={() => setIsCreateModalOpen(true)}
+                    fullWidth
                 >
                     Tambah Penjualan
                 </Button>

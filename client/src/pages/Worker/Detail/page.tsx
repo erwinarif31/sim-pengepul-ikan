@@ -43,6 +43,7 @@ const DetailWorkerPage = () => {
         {
             key: "actions",
             title: "Detail",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center">
                     <Link

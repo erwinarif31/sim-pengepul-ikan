@@ -1,21 +1,11 @@
-import { z } from "zod";
 import type { AxiosError } from "axios";
-import createSchema from "../utils/createSchema";
 
-const AxiosResponseSchema = z.object({
-    data: z.any(),
-    status: z.number(),
-    headers: z.record(z.string(), z.any()).optional(),
-});
+type AnyResponseType = unknown;
 
-const AnyResponseSchema = createSchema(z.any());
-
-type AxiosResponseType = z.infer<typeof AxiosResponseSchema>;
-
-type AnyResponseType = z.infer<typeof AnyResponseSchema>;
-
-interface AxiosInstanceResponse<T = AnyResponseType> extends AxiosResponseType {
+interface AxiosInstanceResponse<T = AnyResponseType> {
     data: T;
+    status: number;
+    headers?: Record<string, unknown>;
 }
 
 type ApiResponse<T = AnyResponseType> = Promise<AxiosInstanceResponse<T>>;
@@ -31,4 +21,3 @@ export type {
     AxiosInstanceResponse,
     MutationCallbackArgs,
 };
-

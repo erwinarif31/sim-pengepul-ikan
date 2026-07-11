@@ -20,7 +20,10 @@ export default function DashboardPage() {
 
     // Fetch seasons
     const { data: seasonsResponse, isLoading: isSeasonsLoading } = useSeasonQuery();
-    const seasons = seasonsResponse?.data?.data ?? [];
+    const seasons = useMemo(
+        () => seasonsResponse?.data?.data ?? [],
+        [seasonsResponse],
+    );
 
     // Set default to active season (end_date is null) or first season
     useEffect(() => {

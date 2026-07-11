@@ -10,11 +10,12 @@ import useHarvestTypeQuery from "../../../features/harvest-type/hooks/useHarvest
 
 const schema = z.object({
     harvest_type: z.string().min(1, "Jenis ikan wajib dipilih"),
-    weight: z.string().transform((v) => parseInt(v)).pipe(z.number().min(1)),
+    weight: z.string().transform((v) => parseFloat(v)).pipe(z.number().min(1)),
     price: z.string().transform((v) => parseInt(v)).pipe(z.number().min(0)),
 });
 
-type FormProps = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormProps = z.output<typeof schema>;
 
 interface AddItemModalProps {
     isOpen: boolean;
@@ -48,7 +49,7 @@ export default function AddItemModal({
         setValue,
         watch,
         formState: { errors },
-    } = useForm<FormProps>({
+    } = useForm<FormInput, unknown, FormProps>({
         resolver: zodResolver(schema),
     });
 
@@ -100,6 +101,7 @@ export default function AddItemModal({
                         <Input
                             type="number"
                             placeholder="0"
+                            step={0.1}
                             error={!!errors.weight}
                             hint={errors.weight?.message}
                             {...register("weight")}
@@ -115,18 +117,18 @@ export default function AddItemModal({
                             {...register("price")}
                         />
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md shadow-xs bg-brand-600 hover:bg-brand-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md shadow-xs bg-brand-600 hover:bg-brand-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
                         >
                             {isLoading ? "Simpan" : "Simpan"}
                         </button>

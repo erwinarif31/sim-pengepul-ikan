@@ -106,7 +106,7 @@ export default function BagangPerformanceChart({ data, isLoading }: BagangPerfor
     return (
         <ComponentCard title="Performa Bagang" desc="Perbandingan pendapatan vs biaya per bagang">
             <div className="max-w-full overflow-x-auto custom-scrollbar">
-                <div className="-ml-3 min-w-[400px] xl:min-w-full">
+                <div className="-ml-3 min-w-[300px] sm:min-w-[400px] xl:min-w-full">
                     <Chart options={options} series={series} type="bar" height={300} />
                 </div>
             </div>

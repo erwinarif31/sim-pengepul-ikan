@@ -84,16 +84,9 @@ const AppHeader: React.FC = () => {
                     </button>
 
                     <Link to="/" className="lg:hidden">
-                        <img
-                            className="dark:hidden"
-                            // src="./images/logo/logo.svg"
-                            alt="Logo"
-                        />
-                        <img
-                            className="hidden dark:block"
-                            src="./images/logo/logo-dark.svg"
-                            alt="Logo"
-                        />
+                        <span className="text-lg font-bold text-brand-500 dark:text-white">
+                            Catchery
+                        </span>
                     </Link>
 
                     <button
@@ -117,7 +110,7 @@ const AppHeader: React.FC = () => {
                     </button>
 
                     <div className="hidden lg:block">
-                        <form>
+                        <form onSubmit={(event) => event.preventDefault()}>
                             <div className="relative">
                                 <span className="absolute -translate-y-1/2 pointer-events-none left-4 top-1/2">
                                     <svg

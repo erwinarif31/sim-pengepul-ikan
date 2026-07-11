@@ -22,6 +22,13 @@ class HarvestService {
         });
     }
 
+    static async getAllHarvest(
+        args: RequestArgs,
+        bagangId: string,
+    ): ApiResponse<HarvestResponse["list"]> {
+        return await this.getHarvestsByBagangId(bagangId, args);
+    }
+
     static async createHarvest(data: any): ApiResponse<HarvestResponse["detail"]> {
         return await http.post("/api/harvests", data);
     }

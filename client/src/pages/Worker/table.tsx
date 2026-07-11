@@ -82,6 +82,7 @@ const WorkerTable = () => {
         {
             key: "actions",
             title: "Aksi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <Link
@@ -104,6 +105,28 @@ const WorkerTable = () => {
                     </button>
                 </div>
             ),
+            mobileRender: (row) => (
+                <>
+                    <Link
+                        to={`/pekerja/${row.id}`}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg text-center"
+                    >
+                        Lihat
+                    </Link>
+                    <button
+                        onClick={() => openEditModal(row)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id, row.name)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg"
+                    >
+                        Hapus
+                    </button>
+                </>
+            ),
         },
     ];
     if (error) {
@@ -116,8 +139,8 @@ const WorkerTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex justify-end mb-4">
-                <Button size="sm" variant="primary" onClick={openCreateModal}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
                     Tambah
                 </Button>
             </div>

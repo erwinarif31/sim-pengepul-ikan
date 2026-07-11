@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
 import useWorkerQuery from "../../features/worker/hooks/useWorker";
@@ -77,6 +77,7 @@ const PayrollTable = () => {
         {
             key: "actions",
             title: "Cetak PDF",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <button

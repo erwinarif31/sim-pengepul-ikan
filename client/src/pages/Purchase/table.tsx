@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
 import { EyeIcon } from "../../icons";
 import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
 import { Link } from "react-router-dom";
-import Input from "../../component/form/input/InputField";
-import Select from "../../component/form/Select";
 
 const PurchaseTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -55,10 +53,12 @@ const PurchaseTable = () => {
             title: "Pemilik",
             sortable: true,
             columnClassName: "w-1/4",
+            hideOnMobile: true,
         },
         {
             key: "actions",
             title: "Detail",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center">
                     <Link
@@ -68,6 +68,14 @@ const PurchaseTable = () => {
                         <EyeIcon className="size-5" />
                     </Link>
                 </div>
+            ),
+            mobileRender: (row) => (
+                <Link
+                    to={`/pembelian/${row.id}`}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg text-center"
+                >
+                    Lihat Detail
+                </Link>
             ),
         },
     ];

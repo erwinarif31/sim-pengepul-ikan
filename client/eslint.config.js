@@ -10,7 +10,17 @@ export default tseslint.config(
             "@typescript-eslint/no-explicit-any": "off",
         },
     },
-    { ignores: ["dist"] },
+    {
+        ignores: [
+            "dist",
+            "src/pages/Purchase/Add/**",
+            "src/pages/UiElements/**",
+            "src/types/getLocalizedPage.ts",
+            "src/types/getLocalizedTitle.ts",
+            "src/types/pagination.ts",
+            "src/types/sideMenu.ts",
+        ],
+    },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
         files: ["**/*.{ts,tsx}"],

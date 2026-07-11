@@ -97,12 +97,13 @@ const SeasonTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex justify-end mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
                 <Button
                     size="sm"
                     variant="primary"
                     onClick={handleEndSeason}
                     disabled={isEnding}
+                    fullWidth
                 >
                     {isEnding ? "Memproses..." : "Akhiri Musim"}
                 </Button>

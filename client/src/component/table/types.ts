@@ -6,6 +6,9 @@ export interface TableHeader {
   render?: (row: any) => React.ReactNode;
   sortable?: boolean;
   columnClassName?: string;
+  mobileLabel?: string;
+  hideOnMobile?: boolean;
+  mobileRender?: (row: any) => React.ReactNode;
 }
 
 export interface TablePagination {
@@ -15,6 +18,7 @@ export interface TablePagination {
 }
 
 export interface BasicTableDataProps {
+  title?: string;
   columns: TableHeader[];
   data: any[];
   isLoading?: boolean;

@@ -100,6 +100,7 @@ const BagangTable = () => {
             title: "Status",
             sortable: true,
             columnClassName: "w-1/12",
+            hideOnMobile: true,
             render: (row) => (
                 <span
                     className={`px-2 py-1 rounded text-xs text-white ${row.is_active ? "bg-green-500" : "bg-red-500"
@@ -112,6 +113,7 @@ const BagangTable = () => {
         {
             key: "actions",
             title: "Aksi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <button
@@ -128,6 +130,22 @@ const BagangTable = () => {
                     </button>
                 </div>
             ),
+            mobileRender: (row) => (
+                <>
+                    <button
+                        onClick={() => openEditModal(row)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id, row.name)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg"
+                    >
+                        Hapus
+                    </button>
+                </>
+            ),
         },
     ];
 
@@ -141,8 +159,8 @@ const BagangTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
-            <div className="flex justify-end">
-                <Button size="sm" variant="primary" onClick={openCreateModal}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
                     Tambah Bagang
                 </Button>
             </div>

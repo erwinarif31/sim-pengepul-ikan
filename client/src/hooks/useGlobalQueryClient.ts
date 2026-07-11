@@ -8,7 +8,7 @@ const getErrorCode = (error: Error): number => {
     return 0;
 };
 
-const useGlobalQueryClient = () =>
+const createGlobalQueryClient = () =>
     new QueryClient({
         defaultOptions: {
             queries: {
@@ -32,15 +32,14 @@ const useGlobalQueryClient = () =>
                 onError(e) {
                     const errorCode = getErrorCode(e);
 
-                    if ([401, 403, 404].includes(errorCode)) {
+                    if ([401, 403].includes(errorCode)) {
                         alert(
                             "Maaf, kamu tidak memiliki akses untuk melakukan tindakan ini!",
                         );
-                        window.location.href = "/login";
                     }
                 },
             },
         },
     });
 
-export default useGlobalQueryClient;
+export default createGlobalQueryClient;

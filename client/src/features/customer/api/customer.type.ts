@@ -1,3 +1,8 @@
+interface ApiEnvelope<T> {
+    status: "success" | "failed";
+    data: T;
+}
+
 export interface CustomerProps {
     id: string;
     name: string;
@@ -8,8 +13,8 @@ export interface CustomerProps {
 }
 
 export interface CustomerResponse {
-    list: CustomerProps[];
-    detail: CustomerProps;
+    list: ApiEnvelope<CustomerProps[]>;
+    detail: ApiEnvelope<CustomerProps>;
 }
 
 export interface CreateCustomerRequest {

@@ -70,7 +70,7 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                 Pelanggan
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
                                 <div className="grow">
                                     <Select
                                         options={customerOptions}
@@ -90,12 +90,13 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-4">
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-4">
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={onClose}
                                 type="button"
+                                fullWidth
                             >
                                 Batal
                             </Button>
@@ -104,6 +105,7 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                                 variant="primary"
                                 type="submit"
                                 disabled={!selectedCustomer || isCreatingSales}
+                                fullWidth
                             >
                                 {isCreatingSales ? "Menyimpan..." : "Simpan"}
                             </Button>

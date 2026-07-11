@@ -44,14 +44,15 @@ export default function AddPaymentModal({
         [maxAmount],
     );
 
-    type FormProps = z.infer<typeof schema>;
+    type FormInput = z.input<typeof schema>;
+    type FormProps = z.output<typeof schema>;
 
     const {
         register,
         handleSubmit,
         reset,
         formState: { errors },
-    } = useForm<FormProps>({
+    } = useForm<FormInput, unknown, FormProps>({
         resolver: zodResolver(schema),
     });
 
@@ -86,18 +87,18 @@ export default function AddPaymentModal({
                             {...register("amount")}
                         />
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md shadow-xs bg-brand-600 hover:bg-brand-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md shadow-xs bg-brand-600 hover:bg-brand-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
                         >
                             {isLoading ? "Simpan..." : "Simpan"}
                         </button>

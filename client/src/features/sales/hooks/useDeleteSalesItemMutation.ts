@@ -9,8 +9,11 @@ const useDeleteSalesItemMutation = () => {
             queryClient.invalidateQueries({
                 queryKey: [
                     SalesService.queries.DETAIL,
-                    response?.data?.id?.toString(),
+                    response.data.data.id.toString(),
                 ],
+            });
+            queryClient.invalidateQueries({
+                queryKey: [SalesService.queries.LIST],
             });
         },
     });

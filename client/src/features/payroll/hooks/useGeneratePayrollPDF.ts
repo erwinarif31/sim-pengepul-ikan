@@ -4,7 +4,7 @@ import PayrollService from "../api/payroll.service";
 
 const useGeneratePayrollPDF = () => {
     return useMutation({
-        mutationFn: ({ workerID, workerName, bagangID }: { workerID: string; workerName: string; bagangID?: string }) =>
+        mutationFn: ({ workerID, bagangID }: { workerID: string; workerName: string; bagangID?: string }) =>
             PayrollService.generatePayrollPDF(workerID, bagangID),
         onSuccess: (data, variables) => {
             // Create a blob URL and trigger download

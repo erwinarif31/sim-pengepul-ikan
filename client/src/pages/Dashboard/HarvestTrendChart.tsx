@@ -104,7 +104,7 @@ export default function HarvestTrendChart({ data, isLoading }: HarvestTrendChart
     return (
         <ComponentCard title="Tren Pendapatan Panen" desc="Pendapatan panen per bulan">
             <div className="max-w-full overflow-x-auto custom-scrollbar">
-                <div className="-ml-4 min-w-[500px] xl:min-w-full pl-2">
+                <div className="-ml-4 min-w-[300px] sm:min-w-[500px] xl:min-w-full pl-2">
                     <Chart options={options} series={series} type="area" height={280} />
                 </div>
             </div>

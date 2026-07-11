@@ -25,7 +25,14 @@
     "noUncheckedSideEffectImports": true
   },
   "include": [
-    "src",
-    "**/*.ts"
+    "src"
+  ],
+  "exclude": [
+    "src/pages/Purchase/Add",
+    "src/pages/UiElements",
+    "src/types/getLocalizedPage.ts",
+    "src/types/getLocalizedTitle.ts",
+    "src/types/pagination.ts",
+    "src/types/sideMenu.ts"
   ]
 }

@@ -163,6 +163,7 @@ const DetailSalesPage = () => {
         {
             key: "total",
             title: "Total",
+            hideOnMobile: true,
             render: (row) =>
                 `Rp ${(row.weight * row.price).toLocaleString("id-ID")}`,
         },
@@ -170,6 +171,7 @@ const DetailSalesPage = () => {
         {
             key: "description",
             title: "Deskripsi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="max-w-[200px] whitespace-normal break-words">
                     {row.description || "-"}
@@ -179,6 +181,7 @@ const DetailSalesPage = () => {
         {
             key: "actions",
             title: "Aksi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex gap-2">
                     <button
@@ -194,6 +197,22 @@ const DetailSalesPage = () => {
                         <TrashBinIcon className="size-5" />
                     </button>
                 </div>
+            ),
+            mobileRender: (row) => (
+                <>
+                    <button
+                        onClick={() => openEditHarvestModal(row)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => handleDeleteHarvest(row.id)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg"
+                    >
+                        Hapus
+                    </button>
+                </>
             ),
         },
     ];
@@ -225,6 +244,7 @@ const DetailSalesPage = () => {
         {
             key: "actions",
             title: "Aksi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex gap-2">
                     <button
@@ -241,20 +261,37 @@ const DetailSalesPage = () => {
                     </button>
                 </div>
             ),
+            mobileRender: (row) => (
+                <>
+                    <button
+                        onClick={() => openEditCostModal(row)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => handleDeleteCost(row.id)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg"
+                    >
+                        Hapus
+                    </button>
+                </>
+            ),
         },
     ];
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                     Detail Pembelian
                 </h1>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     {activeTab === "harvest" ? (
                         <Button
                             size="sm"
                             variant="primary"
+                            fullWidth
                             onClick={openCreateHarvestModal}
                         >
                             Tambah Panen
@@ -263,13 +300,14 @@ const DetailSalesPage = () => {
                         <Button
                             size="sm"
                             variant="primary"
+                            fullWidth
                             onClick={openCreateCostModal}
                         >
                             Tambah Pengeluaran
                         </Button>
                     )}
                     <Link to="/pembelian">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" fullWidth>
                             <ChevronLeftIcon className="w-5 h-5" />
                             Kembali
                         </Button>
@@ -278,7 +316,7 @@ const DetailSalesPage = () => {
             </div>
 
             <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8">
+                <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab("harvest")}
                         className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${

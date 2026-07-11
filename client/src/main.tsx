@@ -8,10 +8,10 @@ import "simplebar-react/dist/simplebar.min.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AppWrapper } from "./component/common/PageMeta.tsx";
-import useGlobalQueryClient from "./hooks/useGlobalQueryClient.ts";
+import createGlobalQueryClient from "./hooks/useGlobalQueryClient.ts";
 
 // Instantiate the QueryClient
-const queryClient = useGlobalQueryClient();
+const queryClient = createGlobalQueryClient();
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>

@@ -88,16 +88,19 @@ const CustomerTable = () => {
             title: "Kontak",
             sortable: true,
             columnClassName: "w-1/4",
+            hideOnMobile: true,
         },
         {
             key: "address",
             title: "Alamat",
             sortable: true,
             columnClassName: "w-1/3",
+            hideOnMobile: true,
         },
         {
             key: "actions",
             title: "Aksi",
+            hideOnMobile: true,
             render: (row) => (
                 <div className="flex justify-center gap-2">
                     <button
@@ -114,6 +117,22 @@ const CustomerTable = () => {
                     </button>
                 </div>
             ),
+            mobileRender: (row) => (
+                <>
+                    <button
+                        onClick={() => openEditModal(row)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id, row.name)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg"
+                    >
+                        Hapus
+                    </button>
+                </>
+            ),
         },
     ];
 
@@ -127,8 +146,8 @@ const CustomerTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex justify-end mb-4">
-                <Button size="sm" variant="primary" onClick={openCreateModal}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
                     Tambah
                 </Button>
             </div>

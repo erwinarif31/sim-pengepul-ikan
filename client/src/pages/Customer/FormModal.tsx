@@ -108,12 +108,13 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                             />
                         </div>
                     </div>
-                    <div className="flex justify-end gap-3 mt-4">
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-4">
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={onClose}
                             type="button"
+                            fullWidth
                         >
                             Batal
                         </Button>
@@ -122,6 +123,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                             variant="primary"
                             type="submit"
                             disabled={isLoading}
+                            fullWidth
                         >
                             {isLoading ? "Menyimpan..." : "Simpan"}
                         </Button>

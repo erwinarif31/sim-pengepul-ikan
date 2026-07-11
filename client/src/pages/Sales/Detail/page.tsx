@@ -111,15 +111,21 @@ const DetailSalesPage = () => {
 
     const itemColumns: TableHeader[] = [
         { key: "harvest_types", title: "Jenis Ikan" },
-        { key: "weight", title: "Berat (kg)" },
-        { key: "price", title: "Harga", render: (row) => `Rp ${row.price.toLocaleString("id-ID")}` },
+        { key: "weight", title: "Berat (kg)", hideOnMobile: true },
+        { key: "price", title: "Harga", hideOnMobile: true, render: (row) => `Rp ${row.price.toLocaleString("id-ID")}` },
         { key: "subtotal", title: "Subtotal", render: (row) => `Rp ${row.subtotal.toLocaleString("id-ID")}` },
         {
-            key: "actions", title: "Aksi", render: (row) => (
+            key: "actions", title: "Aksi", hideOnMobile: true, render: (row) => (
                 <div className="flex gap-2">
                     <button onClick={() => openEditItem(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
                     <button onClick={() => handleDeleteItem(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
+            ),
+            mobileRender: (row) => (
+                <>
+                    <button onClick={() => openEditItem(row)} className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">Edit</button>
+                    <button onClick={() => handleDeleteItem(row.id)} className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg">Hapus</button>
+                </>
             )
         }
     ];
@@ -128,11 +134,17 @@ const DetailSalesPage = () => {
         { key: "paid_at", title: "Tanggal", render: (row) => new Date(row.paid_at).toLocaleDateString("id-ID") },
         { key: "amount", title: "Jumlah", render: (row) => `Rp ${row.amount.toLocaleString("id-ID")}` },
         {
-            key: "actions", title: "Aksi", render: (row) => (
+            key: "actions", title: "Aksi", hideOnMobile: true, render: (row) => (
                 <div className="flex gap-2">
                     <button onClick={() => openEditPayment(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
                     <button onClick={() => handleDeletePayment(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
+            ),
+            mobileRender: (row) => (
+                <>
+                    <button onClick={() => openEditPayment(row)} className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">Edit</button>
+                    <button onClick={() => handleDeletePayment(row.id)} className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg">Hapus</button>
+                </>
             )
         }
     ];
@@ -148,14 +160,14 @@ const DetailSalesPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Detail Penjualan #{salesData.id}</h1>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${salesData.is_paid_off ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                         {salesData.is_paid_off ? "LUNAS" : "BELUM LUNAS"}
                     </span>
                 </div>
-                <Link to="/penjualan"><Button variant="outline" size="sm"><ChevronLeftIcon className="w-5 h-5" />Kembali</Button></Link>
+                <Link to="/penjualan"><Button variant="outline" size="sm" fullWidth><ChevronLeftIcon className="w-5 h-5" />Kembali</Button></Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -191,9 +203,9 @@ const DetailSalesPage = () => {
             </div>
 
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
-                    <Button size="sm" onClick={openAddPayment}>Tambah Pembayaran</Button>
+                    <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>
                 </div>
                 <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
             </div>

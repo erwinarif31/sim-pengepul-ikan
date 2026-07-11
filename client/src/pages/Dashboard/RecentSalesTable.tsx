@@ -19,6 +19,7 @@ export default function RecentSalesTable({ data, isLoading }: RecentSalesTablePr
         {
             key: "issued_at",
             title: "Tanggal",
+            hideOnMobile: true,
             columnClassName: "w-1/6",
         },
         {
@@ -29,6 +30,7 @@ export default function RecentSalesTable({ data, isLoading }: RecentSalesTablePr
         {
             key: "total_paid",
             title: "Dibayar",
+            hideOnMobile: true,
             render: (row) => `Rp ${row.total_paid.toLocaleString("id-ID")}`,
         },
         {
