@@ -4,6 +4,8 @@ import createSchema from "../../../utils/createSchema";
 const SalesSchema = z.object({
     id: z.number(),
     customer: z.string(),
+    bagang_id: z.string().optional().nullable(),
+    bagang_name: z.string().optional(),
     issued_at: z.string(),
     is_paid_off: z.boolean(),
     paid_off_at: z.string().optional().nullable(),

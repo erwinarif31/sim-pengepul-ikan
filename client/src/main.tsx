@@ -9,6 +9,7 @@ import App from "./App.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AppWrapper } from "./component/common/PageMeta.tsx";
 import createGlobalQueryClient from "./hooks/useGlobalQueryClient.ts";
+import { AuthProvider } from "./context/AuthContext.tsx";
 
 // Instantiate the QueryClient
 const queryClient = createGlobalQueryClient();
@@ -17,11 +18,13 @@ createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
-                <ThemeProvider>
-                    <AppWrapper>
-                        <App />
-                    </AppWrapper>
-                </ThemeProvider>
+                <AuthProvider>
+                    <ThemeProvider>
+                        <AppWrapper>
+                            <App />
+                        </AppWrapper>
+                    </ThemeProvider>
+                </AuthProvider>
             </BrowserRouter>
         </QueryClientProvider>
     </StrictMode>,

@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/erwinarif31/catchery-api/internal/delivery/http"
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,8 +25,9 @@ type RouteConfig struct {
 
 	DashboardController *http.DashboardController
 
-	// AuthMiddleware    fiber.Handler
+	UserController *http.UserController
 
+	AuthMiddleware fiber.Handler
 }
 
 func (c *RouteConfig) Setup() {
@@ -37,98 +39,65 @@ func (c *RouteConfig) Setup() {
 }
 
 func (c *RouteConfig) SetupGuestRoute() {
-
-	// c.App.Post("/api/users", c.UserController.Register)
-
-	// c.App.Post("/api/users/_login", c.UserController.Login)
-
-	c.App.Post("/api/bagang", c.BagangController.Create)
-
-	c.App.Put("/api/bagang/:id", c.BagangController.Update)
-
-	c.App.Delete("/api/bagang/:id", c.BagangController.Delete)
-
-	c.App.Get("/api/bagang/:id", c.BagangController.FindById)
-
-	c.App.Get("/api/bagang", c.BagangController.Search)
-
-	c.App.Get("/api/sales", c.SalesController.Search)
-
-	c.App.Get("/api/sales/:id", c.SalesController.FindById)
-
-	c.App.Post("/api/sales/:id/items", c.SalesController.AddSalesItem)
-
-	c.App.Put("/api/sales/items/:id", c.SalesController.UpdateSalesItem)
-
-	c.App.Delete("/api/sales/items/:id", c.SalesController.DeleteSalesItem)
-
-	c.App.Post("/api/sales/:id/payments", c.SalesController.AddPayment)
-
-	c.App.Put("/api/sales/payments/:id", c.SalesController.UpdatePayment)
-
-	c.App.Delete("/api/sales/payments/:id", c.SalesController.DeletePayment)
-
-	c.App.Get("/api/harvest-types", c.MasterDataController.SearchHarvestTypes)
-
-	c.App.Post("/api/harvest-types", c.MasterDataController.CreateHarvestType)
-
-	c.App.Delete("/api/harvest-types/:name", c.MasterDataController.DeleteHarvestType)
-
-	c.App.Get("/api/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
-
-	c.App.Post("/api/production-cost-types", c.MasterDataController.CreateProductionCostType)
-
-	c.App.Delete("/api/production-cost-types/:name", c.MasterDataController.DeleteProductionCostType)
-
-	c.App.Get("/api/workers", c.MasterDataController.SearchWorkers)
-
-	c.App.Post("/api/workers", c.MasterDataController.CreateWorker)
-
-	c.App.Put("/api/workers/:id", c.MasterDataController.UpdateWorker)
-
-	c.App.Delete("/api/workers/:id", c.MasterDataController.DeleteWorker)
-
-	c.App.Get("/api/workers/:id", c.MasterDataController.FindWorkerById)
-
-	c.App.Get("/api/seasons", c.MasterDataController.SearchSeasons)
-
-	c.App.Post("/api/seasons/end", c.MasterDataController.EndSeason)
-
-	c.App.Get("/api/bagang/:id/harvests", c.HarvestController.SearchByBagangId)
-
-	c.App.Post("/api/harvests", c.HarvestController.Create)
-
-	c.App.Put("/api/harvests/:id", c.HarvestController.Update)
-
-	c.App.Delete("/api/harvests/:id", c.HarvestController.Delete)
-
-	c.App.Get("/api/bagang/:id/production-costs", c.ProductionCostController.SearchByBagangId)
-
-	c.App.Post("/api/production-costs", c.ProductionCostController.Create)
-
-	c.App.Put("/api/production-costs/:id", c.ProductionCostController.Update)
-
-	c.App.Delete("/api/production-costs/:id", c.ProductionCostController.Delete)
-
-	c.App.Post("/api/customers", c.CustomerController.Create)
-
-	c.App.Put("/api/customers/:id", c.CustomerController.Update)
-
-	c.App.Delete("/api/customers/:id", c.CustomerController.Delete)
-
-	c.App.Get("/api/customers/:id", c.CustomerController.FindById)
-
-	c.App.Get("/api/customers", c.CustomerController.Search)
-
-	c.App.Get("/api/payroll/:workerId", c.PayrollController.GeneratePDF)
-
-	// Dashboard routes
-	c.App.Get("/api/dashboard/metrics", c.DashboardController.GetMetrics)
-	c.App.Get("/api/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)
-	c.App.Get("/api/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
-	c.App.Get("/api/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
-	c.App.Get("/api/dashboard/recent-sales", c.DashboardController.GetRecentSales)
+	c.App.Post("/api/users/login", c.UserController.Login)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
+	api := c.App.Group("/api", c.AuthMiddleware)
+
+	api.Get("/users/me", c.UserController.Current)
+	api.Post("/users/logout", c.UserController.Logout)
+	api.Put("/users/me", c.UserController.Update)
+
+	api.Post("/bagang", c.BagangController.Create)
+	api.Put("/bagang/:id", c.BagangController.Update)
+	api.Delete("/bagang/:id", c.BagangController.Delete)
+	api.Get("/bagang/:id", c.BagangController.FindById)
+	api.Get("/bagang", c.BagangController.Search)
+
+	api.Get("/sales", c.SalesController.Search)
+	api.Post("/sales", c.SalesController.Create)
+	api.Get("/sales/:id", c.SalesController.FindById)
+	api.Post("/sales/:id/items", c.SalesController.AddSalesItem)
+	api.Put("/sales/items/:id", c.SalesController.UpdateSalesItem)
+	api.Delete("/sales/items/:id", c.SalesController.DeleteSalesItem)
+	api.Post("/sales/:id/payments", c.SalesController.AddPayment)
+	api.Put("/sales/payments/:id", c.SalesController.UpdatePayment)
+	api.Delete("/sales/payments/:id", c.SalesController.DeletePayment)
+
+	api.Get("/harvest-types", c.MasterDataController.SearchHarvestTypes)
+	api.Post("/harvest-types", middleware.RequireRole("ADMIN"), c.MasterDataController.CreateHarvestType)
+	api.Delete("/harvest-types/:name", middleware.RequireRole("ADMIN"), c.MasterDataController.DeleteHarvestType)
+	api.Get("/production-cost-types", c.MasterDataController.SearchProductionCostTypes)
+	api.Post("/production-cost-types", middleware.RequireRole("ADMIN"), c.MasterDataController.CreateProductionCostType)
+	api.Delete("/production-cost-types/:name", middleware.RequireRole("ADMIN"), c.MasterDataController.DeleteProductionCostType)
+	api.Get("/workers", c.MasterDataController.SearchWorkers)
+	api.Post("/workers", middleware.RequireRole("ADMIN"), c.MasterDataController.CreateWorker)
+	api.Put("/workers/:id", middleware.RequireRole("ADMIN"), c.MasterDataController.UpdateWorker)
+	api.Delete("/workers/:id", middleware.RequireRole("ADMIN"), c.MasterDataController.DeleteWorker)
+	api.Get("/workers/:id", c.MasterDataController.FindWorkerById)
+	api.Get("/seasons", c.MasterDataController.SearchSeasons)
+	api.Post("/seasons/end", middleware.RequireRole("ADMIN"), c.MasterDataController.EndSeason)
+
+	api.Get("/bagang/:id/harvests", c.HarvestController.SearchByBagangId)
+	api.Post("/harvests", c.HarvestController.Create)
+	api.Put("/harvests/:id", c.HarvestController.Update)
+	api.Delete("/harvests/:id", c.HarvestController.Delete)
+	api.Get("/bagang/:id/production-costs", c.ProductionCostController.SearchByBagangId)
+	api.Post("/production-costs", c.ProductionCostController.Create)
+	api.Put("/production-costs/:id", c.ProductionCostController.Update)
+	api.Delete("/production-costs/:id", c.ProductionCostController.Delete)
+
+	api.Post("/customers", middleware.RequireRole("ADMIN"), c.CustomerController.Create)
+	api.Put("/customers/:id", middleware.RequireRole("ADMIN"), c.CustomerController.Update)
+	api.Delete("/customers/:id", middleware.RequireRole("ADMIN"), c.CustomerController.Delete)
+	api.Get("/customers/:id", c.CustomerController.FindById)
+	api.Get("/customers", c.CustomerController.Search)
+
+	api.Get("/payroll/:workerId", c.PayrollController.GeneratePDF)
+	api.Get("/dashboard/metrics", c.DashboardController.GetMetrics)
+	api.Get("/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)
+	api.Get("/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
+	api.Get("/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
+	api.Get("/dashboard/recent-sales", c.DashboardController.GetRecentSales)
 }

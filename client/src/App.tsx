@@ -13,11 +13,20 @@ import WorkerPage from "./pages/Worker/page";
 import CustomerPage from "./pages/Customer/page";
 import DetailWorkerPage from "./pages/Worker/Detail/page";
 import PayrollPage from "./pages/Payroll/page";
+import LoginPage from "./pages/Login/page";
+import ProtectedRoute from "./component/common/ProtectedRoute";
 
 function App() {
     return (
         <Routes>
-            <Route element={<AppLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+                element={
+                    <ProtectedRoute>
+                        <AppLayout />
+                    </ProtectedRoute>
+                }
+            >
                 <Route index path="/" element={<DashboardPage />} />
                 <Route path="/bagang" element={<BagangPage />} />
                 <Route path="/musim" element={<SeasonPage />} />
@@ -26,10 +35,38 @@ function App() {
                     path="/jenis-pengeluaran"
                     element={<ProductionCostTypePage />}
                 />
-                <Route path="/pekerja" element={<WorkerPage />} />
-                <Route path="/pekerja/:id" element={<DetailWorkerPage />} />
-                <Route path="/pemilik" element={<WorkerPage />} />
-                <Route path="/pemilik/:id" element={<DetailWorkerPage />} />
+                <Route
+                    path="/pekerja"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <WorkerPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/pekerja/:id"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <DetailWorkerPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/pemilik"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <WorkerPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/pemilik/:id"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <DetailWorkerPage />
+                        </ProtectedRoute>
+                    }
+                />
                 <Route path="/pelanggan" element={<CustomerPage />} />
                 <Route path="/penggajian" element={<PayrollPage />} />
 

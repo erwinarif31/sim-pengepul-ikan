@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -24,7 +25,7 @@ func NewPayrollController(
 func (c *PayrollController) GeneratePDF(ctx *fiber.Ctx) error {
 	workerID := ctx.Params("workerId")
 	bagangID := ctx.Query("bagangId")
-	pdfBytes, filename, err := c.PayrollUseCase.GeneratePayrollPDF(ctx.UserContext(), workerID, bagangID)
+	pdfBytes, filename, err := c.PayrollUseCase.GeneratePayrollPDF(ctx.UserContext(), middleware.GetUser(ctx), workerID, bagangID)
 	if err != nil {
 		return err
 	}

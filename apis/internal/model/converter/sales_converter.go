@@ -33,9 +33,16 @@ func SalesToResponse(sales *entity.Sales) *model.SalesResponse {
 		}
 	}
 
+	bagangName := ""
+	if sales.Bagang != nil {
+		bagangName = sales.Bagang.Name
+	}
+
 	return &model.SalesResponse{
 		ID:                 sales.ID,
 		Customer:           sales.Customer,
+		BagangID:           sales.BagangID,
+		BagangName:         bagangName,
 		IssuedAt:           sales.IssuedAt,
 		IsPaidOff:          sales.IsPaidOff,
 		PaidOffAt:          sales.PaidOffAt,

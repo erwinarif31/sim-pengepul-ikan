@@ -23,7 +23,7 @@ class SalesService {
     }
 
     static async createSales(
-        data: { customer: string },
+        data: { customer: string; bagang_id: string },
     ): ApiResponse<SalesResponse["detail"]> {
         return await http.post("/api/sales", data);
     }

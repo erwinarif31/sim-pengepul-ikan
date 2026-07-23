@@ -11,104 +11,7 @@
     }
   ],
   "paths": {
-    "/api/users": {
-      "post": {
-        "tags": [
-          "User API"
-        ],
-        "description": "Register new user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "password": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "password"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Success register new user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "number"
-                        },
-                        "updated_at": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "description": "Logout user",
-        "tags": [
-          "User API"
-        ],
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success logout user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "boolean"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/users/_login": {
+    "/api/users/login": {
       "post": {
         "description": "Login user",
         "tags": [
@@ -146,9 +49,14 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "token": {
-                          "type": "string"
-                        }
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "role": { "type": "string" },
+                        "worker_id": { "type": ["string", "null"] },
+                        "token": { "type": "string" },
+                        "token_expires_at": { "type": ["number", "null"] },
+                        "created_at": { "type": ["number", "null"] },
+                        "updated_at": { "type": ["number", "null"] }
                       }
                     }
                   }
@@ -159,7 +67,42 @@
         }
       }
     },
-    "/api/users/_current": {
+    "/api/users/logout": {
+      "post": {
+        "description": "Logout user",
+        "tags": [
+          "User API"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success logout user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me": {
       "get": {
         "tags": [
           "User API"
@@ -177,7 +120,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Success register new user",
+            "description": "Success get current user",
             "content": {
               "application/json": {
                 "schema": {
@@ -186,18 +129,13 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "number"
-                        },
-                        "updated_at": {
-                          "type": "number"
-                        }
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "role": { "type": "string" },
+                        "worker_id": { "type": ["string", "null"] },
+                        "token_expires_at": { "type": ["number", "null"] },
+                        "created_at": { "type": ["number", "null"] },
+                        "updated_at": { "type": ["number", "null"] }
                       }
                     }
                   }
@@ -207,7 +145,7 @@
           }
         }
       },
-      "patch": {
+      "put": {
         "tags": [
           "User API"
         ],
@@ -241,7 +179,7 @@
         },
         "responses": {
           "200": {
-            "description": "Success register new user",
+            "description": "Success update current user",
             "content": {
               "application/json": {
                 "schema": {
@@ -256,11 +194,20 @@
                         "name": {
                           "type": "string"
                         },
+                        "role": {
+                          "type": "string"
+                        },
+                        "worker_id": {
+                          "type": ["string", "null"]
+                        },
+                        "token_expires_at": {
+                          "type": ["number", "null"]
+                        },
                         "created_at": {
-                          "type": "number"
+                          "type": ["number", "null"]
                         },
                         "updated_at": {
-                          "type": "number"
+                          "type": ["number", "null"]
                         }
                       }
                     }

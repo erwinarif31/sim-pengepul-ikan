@@ -9,6 +9,7 @@ import useDeleteBagangMutation from "../../features/bagang/hooks/useDeleteBagang
 import BagangFormModal from "./FormModal";
 import { BagangProps } from "../../features/bagang/api/bagang.type";
 import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
+import { useAuth } from "../../context/AuthContext";
 
 const BagangTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -16,6 +17,8 @@ const BagangTable = () => {
     const [editingBagang, setEditingBagang] = useState<BagangProps | null>(null);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const { user } = useAuth();
+    const canManage = user?.role === "ADMIN" || user?.role === "OWNER";
 
     const { data: response, isLoading, error } = useBagangQuery();
     const { mutate: createBagang, isPending: isCreating } = useCreateBagangMutation();
@@ -101,7 +104,7 @@ const BagangTable = () => {
             sortable: true,
             columnClassName: "w-1/12",
             hideOnMobile: true,
-            render: (row) => (
+            render: (row: any) => (
                 <span
                     className={`px-2 py-1 rounded text-xs text-white ${row.is_active ? "bg-green-500" : "bg-red-500"
                         }`}
@@ -110,11 +113,11 @@ const BagangTable = () => {
                 </span>
             ),
         },
-        {
+        ...(canManage ? [{
             key: "actions",
             title: "Aksi",
             hideOnMobile: true,
-            render: (row) => (
+            render: (row: any) => (
                 <div className="flex justify-center gap-2">
                     <button
                         onClick={() => openEditModal(row)}
@@ -130,7 +133,7 @@ const BagangTable = () => {
                     </button>
                 </div>
             ),
-            mobileRender: (row) => (
+            mobileRender: (row: any) => (
                 <>
                     <button
                         onClick={() => openEditModal(row)}
@@ -146,7 +149,7 @@ const BagangTable = () => {
                     </button>
                 </>
             ),
-        },
+        }] : []),
     ];
 
     if (error) {
@@ -159,11 +162,13 @@ const BagangTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
-                    Tambah Bagang
-                </Button>
-            </div>
+            {canManage && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                    <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
+                        Tambah Bagang
+                    </Button>
+                </div>
+            )}
 
             <BasicTableData
                 columns={columns}
@@ -183,13 +188,15 @@ const BagangTable = () => {
                 searchValue={search}
             />
 
-            <BagangFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={editingBagang ? handleUpdate : handleCreate}
-                initialData={editingBagang}
-                isLoading={isCreating || isUpdating}
-            />
+            {canManage && (
+                <BagangFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={editingBagang ? handleUpdate : handleCreate}
+                    initialData={editingBagang}
+                    isLoading={isCreating || isUpdating}
+                />
+            )}
         </div>
     );
 };

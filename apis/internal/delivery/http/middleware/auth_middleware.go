@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
 	"github.com/gofiber/fiber/v2"
@@ -8,8 +10,13 @@ import (
 
 func NewAuth(userUserCase *usecase.UserUseCase) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		request := &model.VerifyUserRequest{Token: ctx.Get("Authorization", "NOT_FOUND")}
-		userUserCase.Log.Debugf("Authorization : %s", request.Token)
+		token := strings.TrimSpace(ctx.Get("Authorization"))
+		if token == "" {
+			return fiber.ErrUnauthorized
+		}
+
+		request := &model.VerifyUserRequest{Token: token}
+		userUserCase.Log.Debug("Authorization token received")
 
 		auth, err := userUserCase.Verify(ctx.UserContext(), request)
 		if err != nil {
@@ -24,5 +31,23 @@ func NewAuth(userUserCase *usecase.UserUseCase) fiber.Handler {
 }
 
 func GetUser(ctx *fiber.Ctx) *model.Auth {
-	return ctx.Locals("auth").(*model.Auth)
+	auth, _ := ctx.Locals("auth").(*model.Auth)
+	return auth
+}
+
+func RequireRole(roles ...string) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		auth := GetUser(ctx)
+		if auth == nil {
+			return fiber.ErrUnauthorized
+		}
+
+		for _, role := range roles {
+			if auth.Role == role {
+				return ctx.Next()
+			}
+		}
+
+		return fiber.ErrForbidden
+	}
 }

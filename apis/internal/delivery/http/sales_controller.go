@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +29,7 @@ func (c *SalesController) Search(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	responses, err := c.SalesUseCase.Search(ctx.UserContext(), request)
+	responses, err := c.SalesUseCase.Search(ctx.UserContext(), middleware.GetUser(ctx), request)
 	if err != nil {
 		return err
 	}
@@ -42,7 +43,7 @@ func (c *SalesController) FindById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.FindById(ctx.UserContext(), id)
+	response, err := c.SalesUseCase.FindById(ctx.UserContext(), middleware.GetUser(ctx), id)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (c *SalesController) Create(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(request); err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.Create(ctx.UserContext(), request)
+	response, err := c.SalesUseCase.Create(ctx.UserContext(), middleware.GetUser(ctx), request)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func (c *SalesController) AddSalesItem(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(request); err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.AddSalesItem(ctx.UserContext(), id, request)
+	response, err := c.SalesUseCase.AddSalesItem(ctx.UserContext(), middleware.GetUser(ctx), id, request)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (c *SalesController) AddPayment(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(request); err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.AddPayment(ctx.UserContext(), id, request)
+	response, err := c.SalesUseCase.AddPayment(ctx.UserContext(), middleware.GetUser(ctx), id, request)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (c *SalesController) UpdateSalesItem(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(request); err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.UpdateSalesItem(ctx.UserContext(), id, request)
+	response, err := c.SalesUseCase.UpdateSalesItem(ctx.UserContext(), middleware.GetUser(ctx), id, request)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func (c *SalesController) DeleteSalesItem(ctx *fiber.Ctx) error {
 	if err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.DeleteSalesItem(ctx.UserContext(), id)
+	response, err := c.SalesUseCase.DeleteSalesItem(ctx.UserContext(), middleware.GetUser(ctx), id)
 	if err != nil {
 		return err
 	}
@@ -130,7 +131,7 @@ func (c *SalesController) UpdatePayment(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(request); err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.UpdatePayment(ctx.UserContext(), id, request)
+	response, err := c.SalesUseCase.UpdatePayment(ctx.UserContext(), middleware.GetUser(ctx), id, request)
 	if err != nil {
 		return err
 	}
@@ -142,7 +143,7 @@ func (c *SalesController) DeletePayment(ctx *fiber.Ctx) error {
 	if err != nil {
 		return fiber.ErrBadRequest
 	}
-	response, err := c.SalesUseCase.DeletePayment(ctx.UserContext(), id)
+	response, err := c.SalesUseCase.DeletePayment(ctx.UserContext(), middleware.GetUser(ctx), id)
 	if err != nil {
 		return err
 	}

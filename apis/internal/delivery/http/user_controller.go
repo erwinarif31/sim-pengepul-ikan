@@ -56,6 +56,9 @@ func (c *UserController) Login(ctx *fiber.Ctx) error {
 
 func (c *UserController) Current(ctx *fiber.Ctx) error {
 	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
 
 	request := &model.GetUserRequest{
 		ID: auth.ID,
@@ -72,6 +75,9 @@ func (c *UserController) Current(ctx *fiber.Ctx) error {
 
 func (c *UserController) Logout(ctx *fiber.Ctx) error {
 	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
 
 	request := &model.LogoutUserRequest{
 		ID: auth.ID,
@@ -88,6 +94,9 @@ func (c *UserController) Logout(ctx *fiber.Ctx) error {
 
 func (c *UserController) Update(ctx *fiber.Ctx) error {
 	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
 
 	request := new(model.UpdateUserRequest)
 	if err := ctx.BodyParser(request); err != nil {

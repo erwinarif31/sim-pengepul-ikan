@@ -9,6 +9,7 @@ import Select from "../../component/form/Select";
 import { Modal } from "../../component/ui/modal";
 import useWorkerQuery from "../../features/worker/hooks/useWorker";
 import { BagangProps } from "../../features/bagang/api/bagang.type";
+import { useAuth } from "../../context/AuthContext";
 
 const schema = z.object({
     name: z.string().min(1, "Nama bagang wajib diisi"),
@@ -38,6 +39,7 @@ export default function BagangFormModal({
     isLoading,
 }: BagangFormModalProps) {
     const { data: workerResponse } = useWorkerQuery();
+    const { user } = useAuth();
     const workers = useMemo(() => {
         return (
             workerResponse?.data?.data?.map((w) => ({
@@ -46,6 +48,9 @@ export default function BagangFormModal({
             })) || []
         );
     }, [workerResponse]);
+    const isOwner = user?.role === "OWNER" && Boolean(user.worker_id);
+    const ownerWorkerId = isOwner ? user?.worker_id ?? "" : "";
+    const ownerName = workers.find((w) => w.value === ownerWorkerId)?.label ?? "";
 
     const {
         register,
@@ -87,19 +92,28 @@ export default function BagangFormModal({
                     is_active: initialData.is_active,
                     worker_id: initialData.worker_id,
                     worker_name: initialData.worker_name,
-                    owner_id: initialData.owner_id,
-                    owner_name: initialData.owner_name,
+                    owner_id: ownerWorkerId || initialData.owner_id,
+                    owner_name: ownerName || initialData.owner_name,
                 });
             } else {
                 reset({
                     name: "",
                     is_active: true,
                     worker_id: "",
-                    owner_id: "",
+                    owner_id: ownerWorkerId,
+                    owner_name: ownerName,
                 });
             }
         }
-    }, [isOpen, initialData, reset]);
+    }, [isOpen, initialData, ownerName, ownerWorkerId, reset]);
+
+    const submitForm = (data: FormProps) => {
+        onSubmit(
+            isOwner
+                ? { ...data, owner_id: ownerWorkerId, owner_name: ownerName }
+                : data,
+        );
+    };
 
     return (
         <Modal
@@ -111,7 +125,7 @@ export default function BagangFormModal({
                 <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                     {initialData ? "Edit Bagang" : "Tambah Bagang"}
                 </h3>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
                     <div>
                         <Label>Nama Bagang</Label>
                         <Input
@@ -136,15 +150,23 @@ export default function BagangFormModal({
                     </div>
                     <div>
                         <Label>Pemilik</Label>
-                        <Select
-                            options={workers}
-                            placeholder="Pilih Pemilik"
-                            error={!!errors.owner_id}
-                            hint={errors.owner_id?.message}
-                            {...register("owner_id")}
-                            onChange={(value) => setValue("owner_id", value as string)}
-                            value={watch("owner_id")}
-                        />
+                        {isOwner ? (
+                            <>
+                                <Input type="text" value={ownerName} disabled />
+                                <input type="hidden" {...register("owner_id")} />
+                                <input type="hidden" {...register("owner_name")} />
+                            </>
+                        ) : (
+                            <Select
+                                options={workers}
+                                placeholder="Pilih Pemilik"
+                                error={!!errors.owner_id}
+                                hint={errors.owner_id?.message}
+                                {...register("owner_id")}
+                                onChange={(value) => setValue("owner_id", value as string)}
+                                value={watch("owner_id")}
+                            />
+                        )}
                     </div>
                     <div>
                         <Label>Status Aktif</Label>

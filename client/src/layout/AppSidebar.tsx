@@ -17,11 +17,14 @@ import {
     UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../context/AuthContext";
+import type { UserRole } from "../features/auth/api/auth.type";
 
 type NavItem = {
     name: string;
     icon: React.ReactNode;
     path?: string;
+    roles?: UserRole[];
     subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
@@ -73,22 +76,27 @@ const masterDataItems: NavItem[] = [
         name: "Pekerja",
         icon: <GroupIcon />,
         path: "/pekerja",
+        roles: ["ADMIN"],
     },
     {
         name: "Pemilik",
         icon: <UserIcon />,
         path: "/pemilik",
+        roles: ["ADMIN"],
     },
     {
         name: "Pelanggan",
         icon: <UserCircleIcon />,
         path: "/pelanggan",
+        roles: ["ADMIN", "OWNER", "WORKER"],
     },
 ];
 
 const AppSidebar: React.FC = () => {
     const { isExpanded, isMobileOpen, setIsMobileOpen, isHovered, setIsHovered } = useSidebar();
     const location = useLocation();
+    const { user } = useAuth();
+    const role = user?.role;
 
     const [openSubmenu, setOpenSubmenu] = useState<
         {
@@ -172,7 +180,7 @@ const AppSidebar: React.FC = () => {
     ) => (
         (
             <ul className="flex flex-col gap-4">
-                {items.map((nav, index) => (
+                {items.filter((nav) => !nav.roles || (role && nav.roles.includes(role))).map((nav, index) => (
                     <li key={nav.name}>
                         {nav.subItems
                             ? (

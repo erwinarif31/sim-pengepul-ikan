@@ -4,6 +4,7 @@ import type { TableHeader } from "../../component/table/types";
 import useSeasonQuery from "../../features/season/hooks/useSeasonQuery";
 import useEndSeasonMutation from "../../features/season/hooks/useEndSeasonMutation";
 import Button from "../../component/ui/button/Button";
+import { useAuth } from "../../context/AuthContext";
 
 const columns: TableHeader[] = [
     {
@@ -41,6 +42,8 @@ const SeasonTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const { user } = useAuth();
+    const canEndSeason = user?.role === "ADMIN";
 
     const { data: response, isLoading, error } = useSeasonQuery();
     const { mutate: endSeason, isPending: isEnding } = useEndSeasonMutation();
@@ -97,17 +100,19 @@ const SeasonTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-                <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={handleEndSeason}
-                    disabled={isEnding}
-                    fullWidth
-                >
-                    {isEnding ? "Memproses..." : "Akhiri Musim"}
-                </Button>
-            </div>
+            {canEndSeason && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={handleEndSeason}
+                        disabled={isEnding}
+                        fullWidth
+                    >
+                        {isEnding ? "Memproses..." : "Akhiri Musim"}
+                    </Button>
+                </div>
+            )}
 
             <BasicTableData
                 columns={columns}

@@ -1,15 +1,5 @@
-### Register new user
-POST http://localhost:3000/api/users
-Content-Type: application/json
-
-{
-  "name": "Joko",
-  "id": "joko",
-  "password": "joko"
-}
-
 ### Login user
-POST http://localhost:3000/api/users/_login
+POST http://localhost:3000/api/users/login
 Content-Type: application/json
 
 {
@@ -18,17 +8,17 @@ Content-Type: application/json
 }
 
 ### Get user profile
-GET http://localhost:3000/api/users/_current
+GET http://localhost:3000/api/users/me
 Accept: application/json
 Authorization: {{token}}
 
 ### Logout user
-DELETE http://localhost:3000/api/users
+POST http://localhost:3000/api/users/logout
 Accept: application/json
 Authorization: {{token}}
 
 ### Update user
-PATCH http://localhost:3000/api/users/_current
+PUT http://localhost:3000/api/users/me
 Content-Type: application/json
 Accept: application/json
 Authorization: {{token}}

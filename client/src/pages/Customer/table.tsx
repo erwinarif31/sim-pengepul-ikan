@@ -9,6 +9,7 @@ import useUpdateCustomerMutation from "../../features/customer/hooks/useUpdateCu
 import useDeleteCustomerMutation from "../../features/customer/hooks/useDeleteCustomerMutation";
 import { TrashBinIcon, PencilIcon } from "../../icons";
 import { CustomerProps } from "../../features/customer/api/customer.type";
+import { useAuth } from "../../context/AuthContext";
 
 const CustomerTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -16,6 +17,8 @@ const CustomerTable = () => {
     const [editingCustomer, setEditingCustomer] = useState<CustomerProps | null>(null);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const { user } = useAuth();
+    const canManage = user?.role === "ADMIN";
 
     const { data: response, isLoading, error } = useCustomerQuery();
     const { mutate: createCustomer, isPending: isCreating } = useCreateCustomerMutation();
@@ -102,7 +105,7 @@ const CustomerTable = () => {
             title: "Aksi",
             hideOnMobile: true,
             render: (row) => (
-                <div className="flex justify-center gap-2">
+                canManage && <div className="flex justify-center gap-2">
                     <button
                         onClick={() => openEditModal(row)}
                         className="text-blue-500 hover:text-blue-700"
@@ -118,7 +121,7 @@ const CustomerTable = () => {
                 </div>
             ),
             mobileRender: (row) => (
-                <>
+                canManage && <>
                     <button
                         onClick={() => openEditModal(row)}
                         className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
@@ -146,11 +149,13 @@ const CustomerTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-                <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
-                    Tambah
-                </Button>
-            </div>
+            {canManage && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                    <Button size="sm" variant="primary" onClick={openCreateModal} fullWidth>
+                        Tambah
+                    </Button>
+                </div>
+            )}
 
             <BasicTableData
                 columns={columns}
@@ -170,13 +175,15 @@ const CustomerTable = () => {
                 searchValue={search}
             />
 
-            <CustomerFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={editingCustomer ? handleUpdate : handleCreate}
-                initialData={editingCustomer}
-                isLoading={isCreating || isUpdating}
-            />
+            {canManage && (
+                <CustomerFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={editingCustomer ? handleUpdate : handleCreate}
+                    initialData={editingCustomer}
+                    isLoading={isCreating || isUpdating}
+                />
+            )}
         </div>
     );
 };

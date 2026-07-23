@@ -41,7 +41,7 @@ func NewProductionCostUseCase(
 	}
 }
 
-func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.CreateProductionCostRequest) (*model.ProductionCostResponse, error) {
+func (c *ProductionCostUseCase) Create(ctx context.Context, auth *model.Auth, request *model.CreateProductionCostRequest) (*model.ProductionCostResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -60,7 +60,27 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 	if err != nil {
 		return nil, err
 	}
-	createdBy, createdByName, err := resolveProductionCostCreator(bagang, request.CreatorRole)
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
+
+	creatorRole := request.CreatorRole
+	if auth != nil {
+		switch auth.Role {
+		case "WORKER":
+			creatorRole = "worker"
+		case "OWNER":
+			creatorRole = "owner"
+		case "ADMIN":
+			if creatorRole == "" {
+				creatorRole = "both"
+			}
+		default:
+			return nil, fiber.ErrUnauthorized
+		}
+	}
+
+	createdBy, createdByName, err := resolveProductionCostCreator(bagang, creatorRole)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +91,7 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 		ProductionCostType:    request.ProductionCostType,
 		Price:                 request.Price,
 		ProductionCostsSeason: activeSeason.ID,
-		CreatorRole:           request.CreatorRole,
+		CreatorRole:           creatorRole,
 		CreatedBy:             createdBy,
 		CreatedByName:         createdByName,
 	}
@@ -89,7 +109,7 @@ func (c *ProductionCostUseCase) Create(ctx context.Context, request *model.Creat
 	return converter.ProductionCostToResponse(entity), nil
 }
 
-func (c *ProductionCostUseCase) Update(ctx context.Context, id string, request *model.UpdateProductionCostRequest) (*model.ProductionCostResponse, error) {
+func (c *ProductionCostUseCase) Update(ctx context.Context, auth *model.Auth, id string, request *model.UpdateProductionCostRequest) (*model.ProductionCostResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -102,6 +122,13 @@ func (c *ProductionCostUseCase) Update(ctx context.Context, id string, request *
 	if err := c.ProductionCostRepository.FindById(tx, entity, id); err != nil {
 		return nil, fiber.ErrNotFound
 	}
+	bagang, err := c.findBagangWithPeople(tx, entity.BagangID)
+	if err != nil {
+		return nil, err
+	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
 
 	if request.ProductionCostType != "" {
 		entity.ProductionCostType = request.ProductionCostType
@@ -111,13 +138,8 @@ func (c *ProductionCostUseCase) Update(ctx context.Context, id string, request *
 	}
 
 	role := entity.CreatorRole
-	if request.CreatorRole != "" {
+	if auth != nil && auth.Role == "ADMIN" && request.CreatorRole != "" {
 		role = request.CreatorRole
-	}
-
-	bagang, err := c.findBagangWithPeople(tx, entity.BagangID)
-	if err != nil {
-		return nil, err
 	}
 	createdBy, createdByName, err := resolveProductionCostCreator(bagang, role)
 	if err != nil {
@@ -140,13 +162,20 @@ func (c *ProductionCostUseCase) Update(ctx context.Context, id string, request *
 	return converter.ProductionCostToResponse(entity), nil
 }
 
-func (c *ProductionCostUseCase) Delete(ctx context.Context, id string) error {
+func (c *ProductionCostUseCase) Delete(ctx context.Context, auth *model.Auth, id string) error {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
 	entity := new(entity.ProductionCost)
 	if err := c.ProductionCostRepository.FindById(tx, entity, id); err != nil {
 		return fiber.ErrNotFound
+	}
+	bagang, err := c.findBagangWithPeople(tx, entity.BagangID)
+	if err != nil {
+		return err
+	}
+	if !bagangInScope(auth, bagang) {
+		return fiber.ErrForbidden
 	}
 
 	if err := c.ProductionCostRepository.Delete(tx, entity); err != nil {
@@ -162,8 +191,15 @@ func (c *ProductionCostUseCase) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *ProductionCostUseCase) SearchByBagangId(ctx context.Context, bagangId string) ([]model.ProductionCostResponse, error) {
+func (c *ProductionCostUseCase) SearchByBagangId(ctx context.Context, auth *model.Auth, bagangId string) ([]model.ProductionCostResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	bagang, err := c.findBagangWithPeople(tx, bagangId)
+	if err != nil {
+		return nil, err
+	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
 	costs, err := c.ProductionCostRepository.FindByBagangId(tx, bagangId)
 	if err != nil {
 		c.Log.WithError(err).Error("error searching production costs")

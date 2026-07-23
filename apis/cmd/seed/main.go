@@ -9,6 +9,7 @@ import (
 	"github.com/erwinarif31/catchery-api/internal/config"
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -43,6 +44,8 @@ func main() {
 	// Seed in FK dependency order
 	workerIDs, workerNames := seedWorkers(db, 8)
 	log.Printf("Seeded %d workers\n", len(workerIDs))
+	userCount := seedUsers(db, workerIDs)
+	log.Printf("Seeded %d users\n", userCount)
 
 	customerIDs := seedCustomers(db, 5)
 	log.Printf("Seeded %d customers\n", len(customerIDs))
@@ -56,10 +59,55 @@ func main() {
 	costCount := seedProductionCosts(db, bagangData)
 	log.Printf("Seeded %d production costs\n", costCount)
 
-	salesCount := seedSales(db)
+	salesCount := seedSales(db, bagangData)
 	log.Printf("Seeded %d sales with details and transactions\n", salesCount)
 
 	log.Println("Seeding completed successfully!")
+}
+
+func seedUsers(db *gorm.DB, workerIDs []string) int {
+	if len(workerIDs) < 5 {
+		log.Println("Not enough workers to seed user accounts")
+		return 0
+	}
+
+	accounts := []struct {
+		id       string
+		name     string
+		password string
+		role     string
+		workerID *string
+	}{
+		{id: "admin", name: "Admin", password: "admin123", role: "ADMIN"},
+		{id: "owner1", name: "Pemilik 1", password: "owner123", role: "OWNER", workerID: &workerIDs[0]},
+		{id: "owner2", name: "Pemilik 2", password: "owner223", role: "OWNER", workerID: &workerIDs[3]},
+		{id: "worker1", name: "Pekerja 1", password: "worker123", role: "WORKER", workerID: &workerIDs[2]},
+		{id: "worker2", name: "Pekerja 2", password: "worker223", role: "WORKER", workerID: &workerIDs[4]},
+	}
+
+	count := 0
+	for _, account := range accounts {
+		password, err := bcrypt.GenerateFromPassword([]byte(account.password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("Error hashing password for user %s: %v\n", account.id, err)
+			continue
+		}
+
+		user := entity.User{
+			ID:       account.id,
+			Name:     account.name,
+			Password: string(password),
+			Role:     account.role,
+			WorkerID: account.workerID,
+		}
+		if err := db.Create(&user).Error; err != nil {
+			log.Printf("Error creating user %s: %v\n", account.id, err)
+			continue
+		}
+		count++
+	}
+
+	return count
 }
 
 // seedWorkers creates workers with generic names: Person 1, Person 2, etc.
@@ -313,11 +361,14 @@ func seedProductionCosts(db *gorm.DB, bagangs []BagangInfo) int {
 }
 
 // seedSales creates ~9 sales with details and transaction details
-func seedSales(db *gorm.DB) int {
+func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 	count := 0
 	totalSales := 9
 
 	for i := 0; i < totalSales; i++ {
+		bagang := bagangs[rand.Intn(len(bagangs))]
+		bagangID := bagang.ID
+
 		// Random customer name from Indonesian names
 		customerName := indonesianNames[rand.Intn(len(indonesianNames))]
 
@@ -334,6 +385,7 @@ func seedSales(db *gorm.DB) int {
 
 		sale := entity.Sales{
 			Customer:  customerName,
+			BagangID:  &bagangID,
 			IssuedAt:  saleDate,
 			IsPaidOff: isPaidOff,
 			PaidOffAt: paidOffAt,

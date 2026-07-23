@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 import { ThemeToggleButton } from "../component/common/ThemeToggleButton";
+import { useAuth } from "../context/AuthContext";
 
 const AppHeader: React.FC = () => {
     const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
     const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+    const { user, logout } = useAuth();
 
     const handleToggle = () => {
         if (window.innerWidth >= 1024) {
@@ -155,8 +157,25 @@ const AppHeader: React.FC = () => {
                         {/* <NotificationDropdown /> */}
                         {/* <!-- Notification Menu Area --> */}
                     </div>
-                    {/* <!-- User Area --> */}
-                    {/* <UserDropdown /> */}
+                    {user && (
+                        <div className="flex items-center gap-3">
+                            <div className="hidden text-right sm:block">
+                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {user.role}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => void logout()}
+                                className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+                            >
+                                Keluar
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>

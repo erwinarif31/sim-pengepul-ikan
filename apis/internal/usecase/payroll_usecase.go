@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/erwinarif31/catchery-api/internal/entity"
+	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jung-kurt/gofpdf"
@@ -44,8 +45,19 @@ func NewPayrollUseCase(
 	}
 }
 
-func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string, bagangID string) ([]byte, string, error) {
+func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, auth *model.Auth, workerID string, bagangID string) ([]byte, string, error) {
 	tx := c.DB.WithContext(ctx)
+	if auth == nil {
+		return nil, "", fiber.ErrUnauthorized
+	}
+	if auth.Role == "WORKER" {
+		if auth.WorkerID == nil || *auth.WorkerID != workerID {
+			return nil, "", fiber.ErrForbidden
+		}
+	}
+	if auth.Role != "ADMIN" && auth.Role != "OWNER" && auth.Role != "WORKER" {
+		return nil, "", fiber.ErrUnauthorized
+	}
 
 	// 1. Get Worker Info
 	worker := new(entity.Worker)
@@ -62,6 +74,12 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, workerID string
 	// 3. Get Associated Bagangs
 	var bagangs []entity.Bagang
 	bagangQuery := tx.Where("worker_id = ? OR owner_id = ?", workerID, workerID)
+	if auth.Role == "OWNER" {
+		if auth.WorkerID == nil {
+			return nil, "", fiber.ErrForbidden
+		}
+		bagangQuery = tx.Where("owner_id = ? AND (worker_id = ? OR owner_id = ?)", *auth.WorkerID, workerID, workerID)
+	}
 	if bagangID != "" {
 		bagangQuery = bagangQuery.Where("id = ?", bagangID)
 	}

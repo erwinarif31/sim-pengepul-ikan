@@ -7,12 +7,15 @@ import HarvestTypeFormModal from "./FormModal";
 import useCreateHarvestTypeMutation from "../../features/harvest-type/hooks/useCreateHarvestTypeMutation";
 import useDeleteHarvestTypeMutation from "../../features/harvest-type/hooks/useDeleteHarvestTypeMutation";
 import { TrashBinIcon } from "../../icons";
+import { useAuth } from "../../context/AuthContext";
 
 const HarvestTypeTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const { user } = useAuth();
+    const canManage = user?.role === "ADMIN";
 
     const { data: response, isLoading, error } = useHarvestTypeQuery();
     const { mutate: createHarvestType, isPending: isCreating } =
@@ -56,10 +59,10 @@ const HarvestTypeTable = () => {
             sortable: true,
             columnClassName: "w-full",
         },
-        {
+        ...(canManage ? [{
             key: "action",
             title: "Aksi",
-            render: (row) => (
+            render: (row: any) => (
                 <div className="flex justify-center gap-2">
                     <button
                         onClick={() => handleDelete(row.name)}
@@ -69,7 +72,7 @@ const HarvestTypeTable = () => {
                     </button>
                 </div>
             ),
-        },
+        }] : []),
     ];
 
     if (error) {
@@ -82,16 +85,18 @@ const HarvestTypeTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-                <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => setIsModalOpen(true)}
-                    fullWidth
-                >
-                    Tambah
-                </Button>
-            </div>
+            {canManage && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => setIsModalOpen(true)}
+                        fullWidth
+                    >
+                        Tambah
+                    </Button>
+                </div>
+            )}
             <BasicTableData
                 columns={columns}
                 data={paginatedData}
@@ -110,12 +115,14 @@ const HarvestTypeTable = () => {
                 searchValue={search}
             />
 
-            <HarvestTypeFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleCreate}
-                isLoading={isCreating}
-            />
+            {canManage && (
+                <HarvestTypeFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={handleCreate}
+                    isLoading={isCreating}
+                />
+            )}
         </div>
     );
 };

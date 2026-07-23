@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"time"
+
 	"github.com/erwinarif31/catchery-api/internal/entity"
 	"github.com/erwinarif31/catchery-api/internal/gateway/messaging"
 	"github.com/erwinarif31/catchery-api/internal/model"
@@ -22,6 +24,8 @@ type UserUseCase struct {
 	UserRepository *repository.UserRepository
 	UserProducer   *messaging.UserProducer
 }
+
+const tokenTTL = 24 * time.Hour
 
 func NewUserUseCase(db *gorm.DB, logger *logrus.Logger, validate *validator.Validate,
 	userRepository *repository.UserRepository, userProducer *messaging.UserProducer) *UserUseCase {
@@ -49,13 +53,17 @@ func (c *UserUseCase) Verify(ctx context.Context, request *model.VerifyUserReque
 		c.Log.Warnf("Failed find user by token : %+v", err)
 		return nil, fiber.ErrNotFound
 	}
+	if user.TokenExpiresAt <= time.Now().UnixMilli() {
+		c.Log.Warnf("Expired token for user : %s", user.ID)
+		return nil, fiber.ErrUnauthorized
+	}
 
 	if err := tx.Commit().Error; err != nil {
 		c.Log.Warnf("Failed commit transaction : %+v", err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return &model.Auth{ID: user.ID}, nil
+	return &model.Auth{ID: user.ID, Role: user.Role, WorkerID: user.WorkerID}, nil
 }
 
 func (c *UserUseCase) Create(ctx context.Context, request *model.RegisterUserRequest) (*model.UserResponse, error) {
@@ -89,6 +97,7 @@ func (c *UserUseCase) Create(ctx context.Context, request *model.RegisterUserReq
 		ID:       request.ID,
 		Password: string(password),
 		Name:     request.Name,
+		Role:     "WORKER",
 	}
 
 	if err := c.UserRepository.Create(tx, user); err != nil {
@@ -136,6 +145,7 @@ func (c *UserUseCase) Login(ctx context.Context, request *model.LoginUserRequest
 	}
 
 	user.Token = uuid.New().String()
+	user.TokenExpiresAt = time.Now().Add(tokenTTL).UnixMilli()
 	if err := c.UserRepository.Update(tx, user); err != nil {
 		c.Log.Warnf("Failed save user : %+v", err)
 		return nil, fiber.ErrInternalServerError
@@ -199,6 +209,7 @@ func (c *UserUseCase) Logout(ctx context.Context, request *model.LogoutUserReque
 	}
 
 	user.Token = ""
+	user.TokenExpiresAt = 0
 
 	if err := c.UserRepository.Update(tx, user); err != nil {
 		c.Log.Warnf("Failed save user : %+v", err)

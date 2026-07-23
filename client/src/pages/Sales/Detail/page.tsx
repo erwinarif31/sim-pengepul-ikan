@@ -15,6 +15,7 @@ import AddPaymentModal from "./AddPaymentModal";
 import type { TableHeader } from "../../../component/table/types";
 import toast from "react-hot-toast";
 import Input from "../../../component/form/input/InputField";
+import { useAuth } from "../../../context/AuthContext";
 
 const DetailSalesPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -25,6 +26,8 @@ const DetailSalesPage = () => {
     const [editingItem, setEditingItem] = useState<any | null>(null);
     const [editingPayment, setEditingPayment] = useState<any | null>(null);
     const [itemSearch, setItemSearch] = useState("");
+    const { user } = useAuth();
+    const canMutateSales = user?.role !== "WORKER";
 
     const { data: response, isLoading } = useSalesDetailQuery(salesId);
     const salesData = response?.data?.data;
@@ -114,39 +117,39 @@ const DetailSalesPage = () => {
         { key: "weight", title: "Berat (kg)", hideOnMobile: true },
         { key: "price", title: "Harga", hideOnMobile: true, render: (row) => `Rp ${row.price.toLocaleString("id-ID")}` },
         { key: "subtotal", title: "Subtotal", render: (row) => `Rp ${row.subtotal.toLocaleString("id-ID")}` },
-        {
-            key: "actions", title: "Aksi", hideOnMobile: true, render: (row) => (
+        ...(canMutateSales ? [{
+            key: "actions", title: "Aksi", hideOnMobile: true, render: (row: any) => (
                 <div className="flex gap-2">
                     <button onClick={() => openEditItem(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
                     <button onClick={() => handleDeleteItem(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
             ),
-            mobileRender: (row) => (
+            mobileRender: (row: any) => (
                 <>
                     <button onClick={() => openEditItem(row)} className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">Edit</button>
                     <button onClick={() => handleDeleteItem(row.id)} className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg">Hapus</button>
                 </>
             )
-        }
+        }] : [])
     ];
 
     const paymentColumns: TableHeader[] = [
         { key: "paid_at", title: "Tanggal", render: (row) => new Date(row.paid_at).toLocaleDateString("id-ID") },
         { key: "amount", title: "Jumlah", render: (row) => `Rp ${row.amount.toLocaleString("id-ID")}` },
-        {
-            key: "actions", title: "Aksi", hideOnMobile: true, render: (row) => (
+        ...(canMutateSales ? [{
+            key: "actions", title: "Aksi", hideOnMobile: true, render: (row: any) => (
                 <div className="flex gap-2">
                     <button onClick={() => openEditPayment(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
                     <button onClick={() => handleDeletePayment(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
             ),
-            mobileRender: (row) => (
+            mobileRender: (row: any) => (
                 <>
                     <button onClick={() => openEditPayment(row)} className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">Edit</button>
                     <button onClick={() => handleDeletePayment(row.id)} className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg">Hapus</button>
                 </>
             )
-        }
+        }] : [])
     ];
 
     if (isLoading) return <div>Loading...</div>;
@@ -196,7 +199,7 @@ const DetailSalesPage = () => {
                                 onChange={(e) => setItemSearch(e.target.value)}
                             />
                         </div>
-                        <Button size="sm" onClick={openAddItem}>Tambah Barang</Button>
+                        {canMutateSales && <Button size="sm" onClick={openAddItem}>Tambah Barang</Button>}
                     </div>
                 </div>
                 <BasicTableData columns={itemColumns} data={filteredItems} useNumbering />
@@ -205,7 +208,7 @@ const DetailSalesPage = () => {
             <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
-                    <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>
+                    {canMutateSales && <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>}
                 </div>
                 <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
             </div>

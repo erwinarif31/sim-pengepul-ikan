@@ -5,6 +5,8 @@ import "time"
 type SalesResponse struct {
 	ID                 int                         `json:"id"`
 	Customer           string                      `json:"customer"`
+	BagangID           *string                     `json:"bagang_id,omitempty"`
+	BagangName         string                      `json:"bagang_name,omitempty"`
 	IssuedAt           time.Time                   `json:"issued_at"`
 	IsPaidOff          bool                        `json:"is_paid_off"`
 	PaidOffAt          *time.Time                  `json:"paid_off_at,omitempty"`
@@ -32,6 +34,7 @@ type TransactionDetailResponse struct {
 
 type CreateSalesRequest struct {
 	Customer string `json:"customer" validate:"required"`
+	BagangID string `json:"bagang_id" validate:"required,uuid"`
 }
 
 type CreateSalesItemRequest struct {
@@ -46,5 +49,7 @@ type CreatePaymentRequest struct {
 
 type SearchSalesRequest struct {
 	Customer  string `query:"customer"`
+	BagangID  string `query:"bagang_id"`
 	IsPaidOff *bool  `query:"is_paid_off"`
+	BagangIDs []string
 }

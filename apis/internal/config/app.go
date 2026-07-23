@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/erwinarif31/catchery-api/internal/delivery/http"
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/delivery/http/route"
 	"github.com/erwinarif31/catchery-api/internal/repository"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
@@ -23,7 +24,7 @@ type BootstrapConfig struct {
 
 func Bootstrap(config *BootstrapConfig) {
 	// setup repositories
-	// userRepository := repository.NewUserRepository(config.Log)
+	userRepository := repository.NewUserRepository(config.Log)
 	// contactRepository := repository.NewContactRepository(config.Log)
 	// addressRepository := repository.NewAddressRepository(config.Log)
 	bagangRepository := repository.NewBagangRepository(config.Log)
@@ -50,7 +51,7 @@ func Bootstrap(config *BootstrapConfig) {
 	// }
 
 	// setup use cases
-	// userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, userProducer)
+	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, nil)
 	// contactUseCase := usecase.NewContactUseCase(config.DB, config.Log, config.Validate, contactRepository, contactProducer)
 	// addressUseCase := usecase.NewAddressUseCase(config.DB, config.Log, config.Validate, contactRepository, addressRepository, addressProducer)
 	bagangUseCase := usecase.NewBagangUseCase(
@@ -66,6 +67,7 @@ func Bootstrap(config *BootstrapConfig) {
 		salesRepository,
 		salesDetailRepository,
 		transactionDetailRepository,
+		bagangRepository,
 	)
 	masterDataUseCase := usecase.NewMasterDataUseCase(
 		config.DB,
@@ -117,7 +119,7 @@ func Bootstrap(config *BootstrapConfig) {
 		seasonRepository,
 	)
 	// setup controller
-	// userController := http.NewUserController(userUseCase, config.Log)
+	userController := http.NewUserController(userUseCase, config.Log)
 	// contactController := http.NewContactController(contactUseCase, config.Log)
 	// addressController := http.NewAddressController(addressUseCase, config.Log)
 	bagangController := http.NewBagangController(bagangUseCase, config.Log)
@@ -130,11 +132,12 @@ func Bootstrap(config *BootstrapConfig) {
 	dashboardController := http.NewDashboardController(config.Log, dashboardUseCase)
 
 	// setup middleware
-	// authMiddleware := middleware.NewAuth(userUseCase)
+	authMiddleware := middleware.NewAuth(userUseCase)
 
 	routeConfig := route.RouteConfig{
-		App: config.App,
-		// AuthMiddleware:           authMiddleware,
+		App:                      config.App,
+		AuthMiddleware:           authMiddleware,
+		UserController:           userController,
 		BagangController:         bagangController,
 		SalesController:          salesController,
 		MasterDataController:     masterDataController,

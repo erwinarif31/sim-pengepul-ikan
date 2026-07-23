@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +25,8 @@ func NewHarvestController(
 
 func (c *HarvestController) SearchByBagangId(ctx *fiber.Ctx) error {
 	bagangId := ctx.Params("id")
-	responses, err := c.HarvestUseCase.SearchByBagangId(ctx.UserContext(), bagangId)
+	auth := middleware.GetUser(ctx)
+	responses, err := c.HarvestUseCase.SearchByBagangId(ctx.UserContext(), auth, bagangId)
 	if err != nil {
 		return err
 	}
@@ -38,7 +40,7 @@ func (c *HarvestController) Create(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.HarvestUseCase.Create(ctx.UserContext(), request)
+	response, err := c.HarvestUseCase.Create(ctx.UserContext(), middleware.GetUser(ctx), request)
 	if err != nil {
 		return err
 	}
@@ -53,7 +55,7 @@ func (c *HarvestController) Update(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.HarvestUseCase.Update(ctx.UserContext(), id, request)
+	response, err := c.HarvestUseCase.Update(ctx.UserContext(), middleware.GetUser(ctx), id, request)
 	if err != nil {
 		return err
 	}
@@ -62,7 +64,7 @@ func (c *HarvestController) Update(ctx *fiber.Ctx) error {
 
 func (c *HarvestController) Delete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	if err := c.HarvestUseCase.Delete(ctx.UserContext(), id); err != nil {
+	if err := c.HarvestUseCase.Delete(ctx.UserContext(), middleware.GetUser(ctx), id); err != nil {
 		return err
 	}
 	return ctx.JSON(model.WebResponse[bool]{Data: true})

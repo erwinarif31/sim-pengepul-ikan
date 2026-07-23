@@ -37,8 +37,22 @@ func NewBagangUseCase(
 
 func (b *BagangUseCase) Create(
 	ctx context.Context,
+	auth *model.Auth,
 	request *model.BagangCreateRequest,
 ) (*model.BagangResponse, error) {
+	if err := authorizeBagangMutation(auth, nil); err != nil {
+		return nil, err
+	}
+	if auth.Role == "OWNER" {
+		if auth.WorkerID == nil {
+			return nil, fiber.ErrForbidden
+		}
+		if request.OwnerID != "" && request.OwnerID != *auth.WorkerID {
+			return nil, fiber.ErrForbidden
+		}
+		request.OwnerID = *auth.WorkerID
+	}
+
 	tx := b.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -69,6 +83,7 @@ func (b *BagangUseCase) Create(
 
 func (b *BagangUseCase) Update(
 	ctx context.Context,
+	auth *model.Auth,
 	id string,
 	request *model.BagangCreateRequest,
 ) (*model.BagangResponse, error) {
@@ -79,6 +94,15 @@ func (b *BagangUseCase) Update(
 	if err := b.BagangRepository.FindById(tx, bagang, id); err != nil {
 		b.Log.WithError(err).Error("error finding bagang")
 		return nil, fiber.ErrNotFound
+	}
+	if err := authorizeBagangMutation(auth, bagang); err != nil {
+		return nil, err
+	}
+	if auth.Role == "OWNER" {
+		if request.OwnerID != "" && request.OwnerID != *auth.WorkerID {
+			return nil, fiber.ErrForbidden
+		}
+		request.OwnerID = *auth.WorkerID
 	}
 
 	if err := b.Validate.Struct(request); err != nil {
@@ -104,7 +128,7 @@ func (b *BagangUseCase) Update(
 	return converter.BagangToResponse(bagang), nil
 }
 
-func (b *BagangUseCase) Delete(ctx context.Context, id string) error {
+func (b *BagangUseCase) Delete(ctx context.Context, auth *model.Auth, id string) error {
 	tx := b.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -112,6 +136,9 @@ func (b *BagangUseCase) Delete(ctx context.Context, id string) error {
 	if err := b.BagangRepository.FindById(tx, bagang, id); err != nil {
 		b.Log.WithError(err).Error("error finding bagang")
 		return fiber.ErrNotFound
+	}
+	if err := authorizeBagangMutation(auth, bagang); err != nil {
+		return err
 	}
 
 	if err := b.BagangRepository.Delete(tx, bagang); err != nil {
@@ -122,17 +149,36 @@ func (b *BagangUseCase) Delete(ctx context.Context, id string) error {
 	return tx.Commit().Error
 }
 
-func (b *BagangUseCase) FindById(ctx context.Context, id string) (*model.BagangResponse, error) {
+func (b *BagangUseCase) FindById(ctx context.Context, auth *model.Auth, id string) (*model.BagangResponse, error) {
 	tx := b.DB.WithContext(ctx).Preload("Worker").Preload("Owner")
 	bagang := new(entity.Bagang)
 	if err := b.BagangRepository.FindById(tx, bagang, id); err != nil {
 		b.Log.WithError(err).Error("error finding bagang")
 		return nil, fiber.ErrNotFound
 	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
 	return converter.BagangToResponse(bagang), nil
 }
 
-func (b *BagangUseCase) Search(ctx context.Context, request *model.SearchBagangRequest) ([]model.BagangResponse, error) {
+func (b *BagangUseCase) Search(ctx context.Context, auth *model.Auth, request *model.SearchBagangRequest) ([]model.BagangResponse, error) {
+	if !bagangRoleIsValid(auth) {
+		return nil, fiber.ErrForbidden
+	}
+	if auth.Role == "OWNER" {
+		if auth.WorkerID == nil {
+			return nil, fiber.ErrForbidden
+		}
+		request.OwnerID = *auth.WorkerID
+	}
+	if auth.Role == "WORKER" {
+		if auth.WorkerID == nil {
+			return nil, fiber.ErrForbidden
+		}
+		request.WorkerID = *auth.WorkerID
+	}
+
 	tx := b.DB.WithContext(ctx).Preload("Worker").Preload("Owner")
 
 	bagangs, err := b.BagangRepository.Search(tx, request)
@@ -147,4 +193,37 @@ func (b *BagangUseCase) Search(ctx context.Context, request *model.SearchBagangR
 	}
 
 	return responses, nil
+}
+
+func bagangRoleIsValid(auth *model.Auth) bool {
+	return auth != nil && (auth.Role == "ADMIN" || auth.Role == "OWNER" || auth.Role == "WORKER")
+}
+
+func bagangInScope(auth *model.Auth, bagang *entity.Bagang) bool {
+	if !bagangRoleIsValid(auth) {
+		return false
+	}
+	if auth.Role == "ADMIN" {
+		return true
+	}
+	if auth.WorkerID == nil {
+		return false
+	}
+	if auth.Role == "OWNER" {
+		return bagang.OwnerID == *auth.WorkerID
+	}
+	return bagang.WorkerID == *auth.WorkerID
+}
+
+func authorizeBagangMutation(auth *model.Auth, bagang *entity.Bagang) error {
+	if !bagangRoleIsValid(auth) {
+		return fiber.ErrUnauthorized
+	}
+	if auth.Role == "WORKER" {
+		return fiber.ErrForbidden
+	}
+	if bagang != nil && !bagangInScope(auth, bagang) {
+		return fiber.ErrForbidden
+	}
+	return nil
 }

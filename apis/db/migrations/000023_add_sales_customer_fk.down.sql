@@ -1,0 +1,2 @@
+ALTER TABLE sales DROP CONSTRAINT IF EXISTS fk_sales_customer;
+ALTER TABLE sales DROP COLUMN IF EXISTS customer_id;

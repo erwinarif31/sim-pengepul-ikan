@@ -7,12 +7,15 @@ import ProductionCostTypeFormModal from "./FormModal";
 import useCreateProductionCostTypeMutation from "../../features/production-cost-type/hooks/useCreateProductionCostTypeMutation";
 import useDeleteProductionCostTypeMutation from "../../features/production-cost-type/hooks/useDeleteProductionCostTypeMutation";
 import { TrashBinIcon } from "../../icons";
+import { useAuth } from "../../context/AuthContext";
 
 const ProductionCostTypeTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
+    const { user } = useAuth();
+    const canManage = user?.role === "ADMIN";
 
     const { data: response, isLoading, error } = useProductionCostTypeQuery();
     const { mutate: createProductionCostType, isPending: isCreating } =
@@ -57,10 +60,10 @@ const ProductionCostTypeTable = () => {
             sortable: true,
             columnClassName: "w-full",
         },
-        {
+        ...(canManage ? [{
             key: "action",
             title: "Aksi",
-            render: (row) => (
+            render: (row: any) => (
                 <div className="flex justify-center gap-2">
                     <button
                         onClick={() => handleDelete(row.name)}
@@ -70,7 +73,7 @@ const ProductionCostTypeTable = () => {
                     </button>
                 </div>
             ),
-        },
+        }] : []),
     ];
 
     if (error) {
@@ -83,16 +86,18 @@ const ProductionCostTypeTable = () => {
 
     return (
         <div className="p-4 md:p-6 2xl:p-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-                <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => setIsModalOpen(true)}
-                    fullWidth
-                >
-                    Tambah
-                </Button>
-            </div>
+            {canManage && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => setIsModalOpen(true)}
+                        fullWidth
+                    >
+                        Tambah
+                    </Button>
+                </div>
+            )}
 
             <BasicTableData
                 columns={columns}
@@ -112,12 +117,14 @@ const ProductionCostTypeTable = () => {
                 searchValue={search}
             />
 
-            <ProductionCostTypeFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleCreate}
-                isLoading={isCreating}
-            />
+            {canManage && (
+                <ProductionCostTypeFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={handleCreate}
+                    isLoading={isCreating}
+                />
+            )}
         </div>
     );
 };

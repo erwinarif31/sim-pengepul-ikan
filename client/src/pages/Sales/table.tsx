@@ -6,12 +6,15 @@ import useSalesQuery from "../../features/sales/hooks/useSales";
 import { Link } from "react-router-dom";
 import Button from "../../component/ui/button/Button";
 import CreateSalesModal from "./CreateModal";
+import { useAuth } from "../../context/AuthContext";
 
 const SalesTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const { user } = useAuth();
+    const canCreateSales = user?.role !== "WORKER";
 
     const { data: response, isLoading, error } = useSalesQuery();
 
@@ -26,6 +29,7 @@ const SalesTable = () => {
 
         return (
             item.customer.toLowerCase().includes(searchTerm) ||
+            (item.bagang_name || "").toLowerCase().includes(searchTerm) ||
             dateStr.toLowerCase().includes(searchTerm) ||
             amountStr.toLowerCase().includes(searchTerm) ||
             statusStr.includes(searchTerm)
@@ -54,6 +58,13 @@ const SalesTable = () => {
             title: "Pelanggan",
             sortable: true,
             columnClassName: "w-1/4",
+        },
+        {
+            key: "bagang_name",
+            title: "Bagang",
+            sortable: true,
+            columnClassName: "w-1/5",
+            render: (row) => row.bagang_name || "-",
         },
         {
             key: "issued_at",
@@ -120,14 +131,16 @@ const SalesTable = () => {
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-                <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => setIsCreateModalOpen(true)}
-                    fullWidth
-                >
-                    Tambah Penjualan
-                </Button>
+                {canCreateSales && (
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        fullWidth
+                    >
+                        Tambah Penjualan
+                    </Button>
+                )}
             </div>
 
             <BasicTableData

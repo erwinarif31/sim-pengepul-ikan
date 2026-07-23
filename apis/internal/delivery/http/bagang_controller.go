@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/erwinarif31/catchery-api/internal/delivery/http/middleware"
 	"github.com/erwinarif31/catchery-api/internal/model"
 	"github.com/erwinarif31/catchery-api/internal/usecase"
 	"github.com/gofiber/fiber/v2"
@@ -20,13 +21,18 @@ func NewBagangController(useCase *usecase.BagangUseCase, log *logrus.Logger) *Ba
 }
 
 func (c *BagangController) Create(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+
 	request := new(model.BagangCreateRequest)
 	if err := ctx.BodyParser(request); err != nil {
 		c.Log.WithError(err).Error("error parsing request body")
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.BagangUseCase.Create(ctx.UserContext(), request)
+	response, err := c.BagangUseCase.Create(ctx.UserContext(), auth, request)
 	if err != nil {
 		return err
 	}
@@ -37,6 +43,11 @@ func (c *BagangController) Create(ctx *fiber.Ctx) error {
 }
 
 func (c *BagangController) Update(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+
 	id := ctx.Params("id")
 	request := new(model.BagangCreateRequest)
 	if err := ctx.BodyParser(request); err != nil {
@@ -44,7 +55,7 @@ func (c *BagangController) Update(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.BagangUseCase.Update(ctx.UserContext(), id, request)
+	response, err := c.BagangUseCase.Update(ctx.UserContext(), auth, id, request)
 	if err != nil {
 		return err
 	}
@@ -55,16 +66,26 @@ func (c *BagangController) Update(ctx *fiber.Ctx) error {
 }
 
 func (c *BagangController) Delete(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+
 	id := ctx.Params("id")
-	if err := c.BagangUseCase.Delete(ctx.UserContext(), id); err != nil {
+	if err := c.BagangUseCase.Delete(ctx.UserContext(), auth, id); err != nil {
 		return err
 	}
 	return ctx.JSON(model.WebResponse[bool]{Data: true})
 }
 
 func (c *BagangController) FindById(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+
 	id := ctx.Params("id")
-	response, err := c.BagangUseCase.FindById(ctx.UserContext(), id)
+	response, err := c.BagangUseCase.FindById(ctx.UserContext(), auth, id)
 	if err != nil {
 		return err
 	}
@@ -72,6 +93,10 @@ func (c *BagangController) FindById(ctx *fiber.Ctx) error {
 }
 
 func (c *BagangController) Search(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
 
 	request := new(model.SearchBagangRequest)
 
@@ -81,7 +106,7 @@ func (c *BagangController) Search(ctx *fiber.Ctx) error {
 
 	}
 
-	responses, err := c.BagangUseCase.Search(ctx.UserContext(), request)
+	responses, err := c.BagangUseCase.Search(ctx.UserContext(), auth, request)
 
 	if err != nil {
 

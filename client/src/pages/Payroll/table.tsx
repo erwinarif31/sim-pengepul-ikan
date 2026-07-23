@@ -6,12 +6,14 @@ import useGeneratePayrollPDF from "../../features/payroll/hooks/useGeneratePayro
 import { DownloadIcon } from "../../icons";
 import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
 import Select from "../../component/form/Select";
+import { useAuth } from "../../context/AuthContext";
 
 const PayrollTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
     const [search, setSearch] = useState("");
     const [selectedBagangs, setSelectedBagangs] = useState<Record<string, string>>({});
+    const { user } = useAuth();
 
     const { data: workerResponse, isLoading: isLoadingWorkers, error: workerError } = useWorkerQuery();
     const { data: bagangResponse, isLoading: isLoadingBagangs } = useBagangQuery();
@@ -19,10 +21,19 @@ const PayrollTable = () => {
 
     const workers = workerResponse?.data?.data || [];
     const allBagangs = bagangResponse?.data?.data || [];
+    const allowedWorkerIDs = new Set(
+        user?.role === "ADMIN"
+            ? workers.map((worker) => worker.id)
+            : user?.role === "WORKER" && user.worker_id
+                ? [user.worker_id]
+                : allBagangs.flatMap((bagang) => [bagang.worker_id, bagang.owner_id]),
+    );
 
     // Client-side filtering
-    const filteredWorkers = workers.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase())
+    const filteredWorkers = workers.filter(
+        (item) =>
+            allowedWorkerIDs.has(item.id) &&
+            item.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const handlePageChange = (page: number) => {

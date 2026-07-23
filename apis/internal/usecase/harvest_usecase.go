@@ -42,7 +42,7 @@ func NewHarvestUseCase(
 	}
 }
 
-func (c *HarvestUseCase) Create(ctx context.Context, request *model.CreateHarvestRequest) (*model.HarvestResponse, error) {
+func (c *HarvestUseCase) Create(ctx context.Context, auth *model.Auth, request *model.CreateHarvestRequest) (*model.HarvestResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -64,12 +64,21 @@ func (c *HarvestUseCase) Create(ctx context.Context, request *model.CreateHarves
 		return nil, fiber.ErrBadRequest
 	}
 
-	createdBy, createdByName, err := c.resolveHarvestCreator(tx, request.BagangID, request.CreatedBy)
+	bagang := new(entity.Bagang)
+	if err := c.BagangRepository.FindById(tx.Preload("Worker").Preload("Owner"), bagang, request.BagangID); err != nil {
+		c.Log.WithError(err).Error("error finding bagang")
+		return nil, fiber.ErrNotFound
+	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
+
+	createdBy, createdByName, err := c.resolveHarvestCreator(auth, bagang, request.CreatedBy)
 	if err != nil {
 		return nil, err
 	}
 
-	entity := &entity.Harvest{
+	harvest := &entity.Harvest{
 		ID:             uuid.New().String(),
 		HarvestDate:    harvestDate,
 		Weight:         request.Weight,
@@ -82,7 +91,7 @@ func (c *HarvestUseCase) Create(ctx context.Context, request *model.CreateHarves
 		Description:    request.Description,
 	}
 
-	if err := c.HarvestRepository.Create(tx, entity); err != nil {
+	if err := c.HarvestRepository.Create(tx, harvest); err != nil {
 		c.Log.WithError(err).Error("error creating harvest")
 		return nil, fiber.ErrInternalServerError
 	}
@@ -92,10 +101,10 @@ func (c *HarvestUseCase) Create(ctx context.Context, request *model.CreateHarves
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return converter.HarvestToResponse(entity), nil
+	return converter.HarvestToResponse(harvest), nil
 }
 
-func (c *HarvestUseCase) Update(ctx context.Context, id string, request *model.UpdateHarvestRequest) (*model.HarvestResponse, error) {
+func (c *HarvestUseCase) Update(ctx context.Context, auth *model.Auth, id string, request *model.UpdateHarvestRequest) (*model.HarvestResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -104,9 +113,17 @@ func (c *HarvestUseCase) Update(ctx context.Context, id string, request *model.U
 		return nil, fiber.ErrBadRequest
 	}
 
-	entity := new(entity.Harvest)
-	if err := c.HarvestRepository.FindById(tx, entity, id); err != nil {
+	harvest := new(entity.Harvest)
+	if err := c.HarvestRepository.FindById(tx, harvest, id); err != nil {
 		return nil, fiber.ErrNotFound
+	}
+	bagang := new(entity.Bagang)
+	if err := c.BagangRepository.FindById(tx.Preload("Worker").Preload("Owner"), bagang, harvest.BagangID); err != nil {
+		c.Log.WithError(err).Error("error finding bagang")
+		return nil, fiber.ErrNotFound
+	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
 	}
 
 	if request.HarvestDate != "" {
@@ -115,22 +132,22 @@ func (c *HarvestUseCase) Update(ctx context.Context, id string, request *model.U
 			c.Log.WithError(err).Error("error parsing harvest date")
 			return nil, fiber.ErrBadRequest
 		}
-		entity.HarvestDate = harvestDate
+		harvest.HarvestDate = harvestDate
 	}
 	if request.Weight != nil {
-		entity.Weight = *request.Weight
+		harvest.Weight = *request.Weight
 	}
 	if request.Price != nil {
-		entity.Price = *request.Price
+		harvest.Price = *request.Price
 	}
 	if request.HarvestType != "" {
-		entity.HarvestType = request.HarvestType
+		harvest.HarvestType = request.HarvestType
 	}
 	if request.Description != nil {
-		entity.Description = *request.Description
+		harvest.Description = *request.Description
 	}
 
-	if err := c.HarvestRepository.Update(tx, entity); err != nil {
+	if err := c.HarvestRepository.Update(tx, harvest); err != nil {
 		c.Log.WithError(err).Error("error updating harvest")
 		return nil, fiber.ErrInternalServerError
 	}
@@ -140,19 +157,27 @@ func (c *HarvestUseCase) Update(ctx context.Context, id string, request *model.U
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return converter.HarvestToResponse(entity), nil
+	return converter.HarvestToResponse(harvest), nil
 }
 
-func (c *HarvestUseCase) Delete(ctx context.Context, id string) error {
+func (c *HarvestUseCase) Delete(ctx context.Context, auth *model.Auth, id string) error {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	entity := new(entity.Harvest)
-	if err := c.HarvestRepository.FindById(tx, entity, id); err != nil {
+	harvest := new(entity.Harvest)
+	if err := c.HarvestRepository.FindById(tx, harvest, id); err != nil {
 		return fiber.ErrNotFound
 	}
+	bagang := new(entity.Bagang)
+	if err := c.BagangRepository.FindById(tx.Preload("Worker").Preload("Owner"), bagang, harvest.BagangID); err != nil {
+		c.Log.WithError(err).Error("error finding bagang")
+		return fiber.ErrNotFound
+	}
+	if !bagangInScope(auth, bagang) {
+		return fiber.ErrForbidden
+	}
 
-	if err := c.HarvestRepository.Delete(tx, entity); err != nil {
+	if err := c.HarvestRepository.Delete(tx, harvest); err != nil {
 		c.Log.WithError(err).Error("error deleting harvest")
 		return fiber.ErrInternalServerError
 	}
@@ -165,8 +190,16 @@ func (c *HarvestUseCase) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *HarvestUseCase) SearchByBagangId(ctx context.Context, bagangId string) ([]model.HarvestResponse, error) {
+func (c *HarvestUseCase) SearchByBagangId(ctx context.Context, auth *model.Auth, bagangId string) ([]model.HarvestResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	bagang := new(entity.Bagang)
+	if err := c.BagangRepository.FindById(tx.Preload("Worker").Preload("Owner"), bagang, bagangId); err != nil {
+		c.Log.WithError(err).Error("error finding bagang")
+		return nil, fiber.ErrNotFound
+	}
+	if !bagangInScope(auth, bagang) {
+		return nil, fiber.ErrForbidden
+	}
 	harvests, err := c.HarvestRepository.FindByBagangId(tx, bagangId)
 	if err != nil {
 		c.Log.WithError(err).Error("error searching harvests")
@@ -180,19 +213,37 @@ func (c *HarvestUseCase) SearchByBagangId(ctx context.Context, bagangId string) 
 	return responses, nil
 }
 
-func (c *HarvestUseCase) resolveHarvestCreator(db *gorm.DB, bagangID string, createdBy string) (*string, *string, error) {
-	bagang := new(entity.Bagang)
-	if err := c.BagangRepository.FindById(db.Preload("Worker").Preload("Owner"), bagang, bagangID); err != nil {
-		c.Log.WithError(err).Error("error finding bagang")
-		return nil, nil, fiber.ErrNotFound
+func (c *HarvestUseCase) resolveHarvestCreator(auth *model.Auth, bagang *entity.Bagang, createdBy string) (*string, *string, error) {
+	if auth == nil {
+		return nil, nil, fiber.ErrUnauthorized
 	}
 
-	if createdBy == "" {
-		createdBy = bagang.WorkerID
+	resolved := createdBy
+	switch auth.Role {
+	case "ADMIN":
+		if resolved == "" {
+			resolved = bagang.WorkerID
+		}
+	case "OWNER":
+		if auth.WorkerID == nil || bagang.OwnerID != *auth.WorkerID {
+			return nil, nil, fiber.ErrForbidden
+		}
+		resolved = bagang.OwnerID
+	case "WORKER":
+		if auth.WorkerID == nil || bagang.WorkerID != *auth.WorkerID {
+			return nil, nil, fiber.ErrForbidden
+		}
+		resolved = bagang.WorkerID
+	default:
+		return nil, nil, fiber.ErrUnauthorized
+	}
+
+	if resolved != bagang.WorkerID && resolved != bagang.OwnerID {
+		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "created_by must be bagang worker or owner")
 	}
 
 	var name string
-	switch createdBy {
+	switch resolved {
 	case bagang.WorkerID:
 		if bagang.Worker != nil {
 			name = bagang.Worker.Name
@@ -203,12 +254,10 @@ func (c *HarvestUseCase) resolveHarvestCreator(db *gorm.DB, bagangID string, cre
 		} else if bagang.Worker != nil && bagang.WorkerID == bagang.OwnerID {
 			name = bagang.Worker.Name
 		}
-	default:
-		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "created_by must be bagang worker or owner")
 	}
 
 	if name == "" {
-		return &createdBy, nil, nil
+		return &resolved, nil, nil
 	}
-	return &createdBy, &name, nil
+	return &resolved, &name, nil
 }
