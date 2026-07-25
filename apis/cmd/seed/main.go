@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 
@@ -364,11 +365,13 @@ func seedProductionCosts(db *gorm.DB, bagangs []BagangInfo) int {
 func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 	count := 0
 	totalSales := 9
+	stock, err := loadSaleStock(db)
+	if err != nil {
+		log.Printf("Error loading stock for sales seed: %v\n", err)
+		return 0
+	}
 
 	for i := 0; i < totalSales; i++ {
-		bagang := bagangs[rand.Intn(len(bagangs))]
-		bagangID := bagang.ID
-
 		// Random customer name from Indonesian names
 		customerName := indonesianNames[rand.Intn(len(indonesianNames))]
 
@@ -385,7 +388,6 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 
 		sale := entity.Sales{
 			Customer:  customerName,
-			BagangID:  &bagangID,
 			IssuedAt:  saleDate,
 			IsPaidOff: isPaidOff,
 			PaidOffAt: paidOffAt,
@@ -399,9 +401,32 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 		// Create 1-3 sales details per sale
 		detailCount := 1 + rand.Intn(3)
 		totalSaleAmount := 0
+		createdDetails := 0
 
 		for j := 0; j < detailCount; j++ {
+			bagang := bagangs[(i+j)%len(bagangs)]
+			bagangID := bagang.ID
 			harvestType := harvestTypes[rand.Intn(len(harvestTypes))]
+			if stock[bagangID][harvestType] < 1 {
+				found := false
+				for _, candidate := range bagangs {
+					for _, candidateType := range harvestTypes {
+						if stock[candidate.ID][candidateType] >= 1 {
+							bagang = candidate
+							bagangID = candidate.ID
+							harvestType = candidateType
+							found = true
+							break
+						}
+					}
+					if found {
+						break
+					}
+				}
+				if !found {
+					break
+				}
+			}
 
 			var price int
 			switch harvestType {
@@ -413,10 +438,16 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 				price = 50000 + rand.Intn(20000)
 			}
 
-			weight := 10 + rand.Intn(90) // 10-100 kg
+			maxWeightTenths := int(stock[bagangID][harvestType] * 10)
+			if maxWeightTenths > 900 {
+				maxWeightTenths = 900
+			}
+			weight := float64(1+rand.Intn(maxWeightTenths)) / 10
+			stock[bagangID][harvestType] -= float64(weight)
 
 			detail := entity.SalesDetail{
 				SalesID:     sale.ID,
+				BagangID:    &bagangID,
 				HarvestType: harvestType,
 				Weight:      weight,
 				Price:       price,
@@ -427,7 +458,14 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 				continue
 			}
 
-			totalSaleAmount += weight * price
+			totalSaleAmount += int(math.Round(weight * float64(price)))
+			createdDetails++
+		}
+		if createdDetails == 0 {
+			if err := db.Delete(&sale).Error; err != nil {
+				log.Printf("Error removing empty sale %d: %v\n", sale.ID, err)
+			}
+			continue
 		}
 
 		// Create transaction details (payments)
@@ -456,4 +494,20 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 	}
 
 	return count
+}
+
+func loadSaleStock(db *gorm.DB) (map[string]map[string]float64, error) {
+	var harvests []entity.Harvest
+	if err := db.Select("bagang_id, harvest_type, weight").Find(&harvests).Error; err != nil {
+		return nil, err
+	}
+
+	stock := make(map[string]map[string]float64)
+	for _, harvest := range harvests {
+		if stock[harvest.BagangID] == nil {
+			stock[harvest.BagangID] = make(map[string]float64)
+		}
+		stock[harvest.BagangID][harvest.HarvestType] += harvest.Weight
+	}
+	return stock, nil
 }

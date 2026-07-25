@@ -49,6 +49,17 @@ const navItems: NavItem[] = [
         icon: <DocsIcon />,
         path: "/penggajian/",
     },
+    {
+        name: "Stok",
+        icon: <BoxCubeIcon />,
+        path: "/stok",
+    },
+    {
+        name: "Laporan Keuangan",
+        icon: <DocsIcon />,
+        path: "/laporan-keuangan",
+        roles: ["ADMIN", "OWNER"],
+    },
 ];
 
 const masterDataItems: NavItem[] = [

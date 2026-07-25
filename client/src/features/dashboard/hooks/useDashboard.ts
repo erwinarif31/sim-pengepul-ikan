@@ -33,9 +33,10 @@ export const useBagangPerformance = (seasonId: number | undefined, limit?: numbe
     });
 };
 
-export const useRecentSales = (limit?: number) => {
+export const useRecentSales = (seasonId: number | undefined, limit?: number) => {
     return useQuery({
-        queryKey: [DashboardService.queries.RECENT_SALES, limit],
-        queryFn: ({ signal }) => DashboardService.getRecentSales(limit, signal),
+        queryKey: [DashboardService.queries.RECENT_SALES, seasonId, limit],
+        queryFn: ({ signal }) => DashboardService.getRecentSales(seasonId!, limit, signal),
+        enabled: !!seasonId,
     });
 };

@@ -29,7 +29,6 @@ const SalesTable = () => {
 
         return (
             item.customer.toLowerCase().includes(searchTerm) ||
-            (item.bagang_name || "").toLowerCase().includes(searchTerm) ||
             dateStr.toLowerCase().includes(searchTerm) ||
             amountStr.toLowerCase().includes(searchTerm) ||
             statusStr.includes(searchTerm)
@@ -58,13 +57,6 @@ const SalesTable = () => {
             title: "Pelanggan",
             sortable: true,
             columnClassName: "w-1/4",
-        },
-        {
-            key: "bagang_name",
-            title: "Bagang",
-            sortable: true,
-            columnClassName: "w-1/5",
-            render: (row) => row.bagang_name || "-",
         },
         {
             key: "issued_at",

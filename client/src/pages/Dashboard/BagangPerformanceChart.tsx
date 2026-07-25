@@ -10,8 +10,8 @@ interface BagangPerformanceChartProps {
 
 export default function BagangPerformanceChart({ data, isLoading }: BagangPerformanceChartProps) {
     const categories = data?.map((item) => item.bagang_name) ?? [];
-    const revenues = data?.map((item) => item.revenue) ?? [];
-    const costs = data?.map((item) => item.cost) ?? [];
+    const revenues = data?.map((item) => item.sales_revenue) ?? [];
+    const costs = data?.map((item) => item.production_cost) ?? [];
 
     const options: ApexOptions = {
         colors: ["#465fff", "#ff6b6b"],
@@ -86,29 +86,51 @@ export default function BagangPerformanceChart({ data, isLoading }: BagangPerfor
 
     const series = [
         {
-            name: "Pendapatan",
+            name: "Pendapatan Penjualan",
             data: revenues,
         },
         {
-            name: "Biaya",
+            name: "Biaya Produksi",
             data: costs,
         },
     ];
 
     if (isLoading) {
         return (
-            <ComponentCard title="Performa Bagang" desc="Perbandingan pendapatan vs biaya per bagang">
+            <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs biaya produksi">
                 <div className="h-[300px] bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
             </ComponentCard>
         );
     }
 
     return (
-        <ComponentCard title="Performa Bagang" desc="Perbandingan pendapatan vs biaya per bagang">
+        <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs biaya produksi">
             <div className="max-w-full overflow-x-auto custom-scrollbar">
                 <div className="-ml-3 min-w-[300px] sm:min-w-[400px] xl:min-w-full">
                     <Chart options={options} series={series} type="bar" height={300} />
                 </div>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                    <thead className="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th className="px-3 py-2 font-medium">Bagang</th>
+                            <th className="px-3 py-2 font-medium">Nilai Panen</th>
+                            <th className="px-3 py-2 font-medium">Laba Bersih</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {data?.map((item) => (
+                            <tr key={item.bagang_id ?? "unassigned"}>
+                                <td className="px-3 py-2 text-gray-800 dark:text-white/90">{item.bagang_name}</td>
+                                <td className="px-3 py-2 text-gray-600 dark:text-gray-400">Rp {item.harvest_value.toLocaleString("id-ID")}</td>
+                                <td className={`px-3 py-2 ${item.net_profit >= 0 ? "text-success-600" : "text-error-600"}`}>
+                                    Rp {item.net_profit.toLocaleString("id-ID")}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </ComponentCard>
     );

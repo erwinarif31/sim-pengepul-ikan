@@ -12,7 +12,7 @@ const CHART_COLORS = ["#3641f5", "#7592ff", "#dde9ff", "#465FFF", "#9CB9FF", "#b
 
 export default function HarvestByTypeChart({ data, isLoading }: HarvestByTypeChartProps) {
     const labels = data?.map((item) => item.type) ?? [];
-    const values = data?.map((item) => item.total) ?? [];
+    const values = data?.map((item) => item.harvest_value) ?? [];
     const total = values.reduce((acc, val) => acc + val, 0);
 
     const options: ApexOptions = {
@@ -123,7 +123,7 @@ export default function HarvestByTypeChart({ data, isLoading }: HarvestByTypeCha
                 </div>
                 <div className="flex flex-col items-start gap-4 w-full">
                     {data?.map((item, index) => {
-                        const percentage = total > 0 ? ((item.total / total) * 100).toFixed(1) : 0;
+                        const percentage = total > 0 ? ((item.harvest_value / total) * 100).toFixed(1) : 0;
                         return (
                             <div key={item.type} className="flex items-start gap-2.5 w-full">
                                 <div
@@ -140,7 +140,7 @@ export default function HarvestByTypeChart({ data, isLoading }: HarvestByTypeCha
                                         </p>
                                         <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                                         <p className="text-gray-500 text-theme-sm dark:text-gray-400">
-                                            Rp {item.total.toLocaleString("id-ID")}
+                                            Rp {item.harvest_value.toLocaleString("id-ID")}
                                         </p>
                                     </div>
                                 </div>

@@ -42,267 +42,308 @@ func NewDashboardUseCase(
 	}
 }
 
-// GetMetrics returns KPI overview for a specific season
-func (c *DashboardUseCase) GetMetrics(ctx context.Context, seasonID int) (*model.DashboardMetricsResponse, error) {
+func (c *DashboardUseCase) GetMetrics(ctx context.Context, auth *model.Auth, seasonID int) (*model.DashboardMetricsResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	season := new(entity.Season)
+	if err := tx.Where("id = ?", seasonID).First(season).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fiber.ErrNotFound
+		}
+		c.Log.WithError(err).Error("error fetching season for metrics")
+		return nil, fiber.ErrInternalServerError
+	}
 
-	// Get total harvest revenue and count active bagangs
+	scope, err := resolveReportBagangScope(tx, auth, "")
+	if err != nil {
+		return nil, dashboardScopeError(c.Log, err, "error resolving dashboard scope")
+	}
+
 	var harvests []entity.Harvest
-	if err := tx.Where("harvests_season = ?", seasonID).Find(&harvests).Error; err != nil {
+	harvestQuery := scope.apply(tx.Where("harvests_season = ?", seasonID), "bagang_id")
+	if err := harvestQuery.Find(&harvests).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching harvests for metrics")
 		return nil, fiber.ErrInternalServerError
 	}
-
-	totalHarvestRevenue := 0
+	totalHarvestValue := 0
 	activeBagangs := make(map[string]bool)
-	for _, h := range harvests {
-		totalHarvestRevenue += int(float64(h.Price) * h.Weight)
-		activeBagangs[h.BagangID] = true
+	for _, harvest := range harvests {
+		totalHarvestValue += calculateHarvestValue(harvest.Price, harvest.Weight)
+		activeBagangs[harvest.BagangID] = true
 	}
-	activeBagangCount := len(activeBagangs)
 
-	// Get total production costs (informational - subset of harvest payment)
 	var costs []entity.ProductionCost
-	if err := tx.Where("production_costs_season = ?", seasonID).Find(&costs).Error; err != nil {
+	costQuery := scope.apply(tx.Where("production_costs_season = ?", seasonID), "bagang_id")
+	if err := costQuery.Find(&costs).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching production costs for metrics")
 		return nil, fiber.ErrInternalServerError
 	}
-
 	totalCosts := 0
 	for _, cost := range costs {
 		totalCosts += cost.Price
 	}
 
-	// Get season to filter sales by date range
-	var season entity.Season
-	if err := tx.Where("id = ?", seasonID).First(&season).Error; err != nil {
-		c.Log.WithError(err).Error("error fetching season for metrics")
-		return nil, fiber.ErrInternalServerError
+	dateRange, err := buildReportDateRange(*season, "", "")
+	if err != nil {
+		return nil, err
 	}
-
-	// Get total sales revenue and total paid (from sales details and transactions)
-	// Filter by season date range (issued_at between start_date and end_date)
-	var salesList []entity.Sales
-	salesQuery := tx.Preload("SalesDetails").Preload("TransactionDetails").
-		Where("issued_at >= ?", season.StartDate)
-	if season.EndDate != nil {
-		salesQuery = salesQuery.Where("issued_at <= ?", *season.EndDate)
-	}
-	if err := salesQuery.Find(&salesList).Error; err != nil {
+	var sales []entity.Sales
+	salesQuery := dateRange.apply(preloadSalesDetails(tx, reportBagangScope{}).Preload("TransactionDetails"), "issued_at")
+	salesQuery = applySalesDetailScope(salesQuery, scope)
+	if err := salesQuery.Find(&sales).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching sales for metrics")
 		return nil, fiber.ErrInternalServerError
 	}
+	totalSalesRevenue, totalPaid, accountsReceivable := calculateSalesTotalsForScope(sales, scope)
 
-	totalSalesRevenue := 0
-	totalPaid := 0
-	for _, sale := range salesList {
-		for _, detail := range sale.SalesDetails {
-			totalSalesRevenue += detail.Weight * detail.Price
-		}
-		for _, transaction := range sale.TransactionDetails {
-			totalPaid += transaction.Amount
-		}
-	}
-
-	// Calculate derived metrics
-	accountsReceivable := totalSalesRevenue - totalPaid
-	netProfit := totalSalesRevenue - totalHarvestRevenue
-
-	// Calculate profit margin (avoid division by zero)
-	var profitMargin float64
-	if totalSalesRevenue > 0 {
-		profitMargin = (float64(netProfit) / float64(totalSalesRevenue)) * 100
-	}
-
-	// Calculate average profit per bagang (avoid division by zero)
-	var avgProfitPerBagang int
+	netProfit := calculateNetProfit(totalSalesRevenue, totalCosts)
+	profitMargin := calculateProfitMargin(totalSalesRevenue, netProfit)
+	activeBagangCount := len(activeBagangs)
+	avgProfitPerBagang := 0
 	if activeBagangCount > 0 {
 		avgProfitPerBagang = netProfit / activeBagangCount
 	}
 
 	return &model.DashboardMetricsResponse{
-		TotalHarvestRevenue: totalHarvestRevenue,
-		TotalCosts:          totalCosts,
-		TotalSalesRevenue:   totalSalesRevenue,
-		TotalPaid:           totalPaid,
-		AccountsReceivable:  accountsReceivable,
-		NetProfit:           netProfit,
-		ProfitMargin:        profitMargin,
-		AvgProfitPerBagang:  avgProfitPerBagang,
-		ActiveBagangCount:   activeBagangCount,
+		TotalHarvestValue:  totalHarvestValue,
+		TotalCosts:         totalCosts,
+		TotalSalesRevenue:  totalSalesRevenue,
+		TotalPaid:          totalPaid,
+		AccountsReceivable: accountsReceivable,
+		NetProfit:          netProfit,
+		ProfitMargin:       profitMargin,
+		AvgProfitPerBagang: avgProfitPerBagang,
+		ActiveBagangCount:  activeBagangCount,
 	}, nil
 }
 
-// GetHarvestTrend returns monthly harvest revenue trend
-func (c *DashboardUseCase) GetHarvestTrend(ctx context.Context, seasonID int) (*model.HarvestTrendResponse, error) {
+func (c *DashboardUseCase) GetHarvestTrend(ctx context.Context, auth *model.Auth, seasonID int) (*model.HarvestTrendResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	if _, err := c.loadSeason(tx, seasonID, "error fetching season for harvest trend"); err != nil {
+		return nil, err
+	}
+	scope, err := resolveReportBagangScope(tx, auth, "")
+	if err != nil {
+		return nil, dashboardScopeError(c.Log, err, "error resolving harvest trend scope")
+	}
 
 	var harvests []entity.Harvest
-	if err := tx.Where("harvests_season = ?", seasonID).Order("harvest_date asc").Find(&harvests).Error; err != nil {
+	query := scope.apply(tx.Where("harvests_season = ?", seasonID).Order("harvest_date asc"), "bagang_id")
+	if err := query.Find(&harvests).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching harvests for trend")
 		return nil, fiber.ErrInternalServerError
 	}
 
-	// Group by month
 	monthlyData := make(map[string]int)
-	monthOrder := []string{}
-
-	for _, h := range harvests {
-		monthKey := h.HarvestDate.Format("Jan 2006")
+	monthOrder := make([]string, 0)
+	for _, harvest := range harvests {
+		monthKey := harvest.HarvestDate.Format("Jan 2006")
 		if _, exists := monthlyData[monthKey]; !exists {
 			monthOrder = append(monthOrder, monthKey)
 		}
-		monthlyData[monthKey] += int(float64(h.Price) * h.Weight)
+		monthlyData[monthKey] += calculateHarvestValue(harvest.Price, harvest.Weight)
 	}
 
 	data := make([]model.HarvestTrendItem, 0, len(monthOrder))
 	for _, month := range monthOrder {
 		data = append(data, model.HarvestTrendItem{
-			Month:   month,
-			Revenue: monthlyData[month],
+			Month:        month,
+			HarvestValue: monthlyData[month],
 		})
 	}
-
 	return &model.HarvestTrendResponse{Data: data}, nil
 }
 
-// GetHarvestByType returns harvest breakdown by type
-func (c *DashboardUseCase) GetHarvestByType(ctx context.Context, seasonID int) (*model.HarvestByTypeResponse, error) {
+func (c *DashboardUseCase) GetHarvestByType(ctx context.Context, auth *model.Auth, seasonID int) (*model.HarvestByTypeResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	if _, err := c.loadSeason(tx, seasonID, "error fetching season for harvest type"); err != nil {
+		return nil, err
+	}
+	scope, err := resolveReportBagangScope(tx, auth, "")
+	if err != nil {
+		return nil, dashboardScopeError(c.Log, err, "error resolving harvest type scope")
+	}
 
 	var harvests []entity.Harvest
-	if err := tx.Where("harvests_season = ?", seasonID).Find(&harvests).Error; err != nil {
+	query := scope.apply(tx.Where("harvests_season = ?", seasonID), "bagang_id")
+	if err := query.Find(&harvests).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching harvests by type")
 		return nil, fiber.ErrInternalServerError
 	}
 
-	// Group by type
 	typeData := make(map[string]int)
-	for _, h := range harvests {
-		typeData[h.HarvestType] += int(float64(h.Price) * h.Weight)
+	for _, harvest := range harvests {
+		typeData[normalizeFishType(harvest.HarvestType)] += calculateHarvestValue(harvest.Price, harvest.Weight)
 	}
-
 	data := make([]model.HarvestByTypeItem, 0, len(typeData))
-	for t, total := range typeData {
+	for harvestType, value := range typeData {
 		data = append(data, model.HarvestByTypeItem{
-			Type:  t,
-			Total: total,
+			Type:         harvestType,
+			HarvestValue: value,
 		})
 	}
-
-	// Sort by total descending
 	sort.Slice(data, func(i, j int) bool {
-		return data[i].Total > data[j].Total
+		return data[i].HarvestValue > data[j].HarvestValue
 	})
-
 	return &model.HarvestByTypeResponse{Data: data}, nil
 }
 
-// GetBagangPerformance returns top bagangs by performance
-func (c *DashboardUseCase) GetBagangPerformance(ctx context.Context, seasonID int, limit int) (*model.BagangPerformanceResponse, error) {
+func (c *DashboardUseCase) GetBagangPerformance(ctx context.Context, auth *model.Auth, seasonID int, limit int) (*model.BagangPerformanceResponse, error) {
 	tx := c.DB.WithContext(ctx)
-
-	// Get all bagangs
-	var bagangs []entity.Bagang
-	if err := tx.Find(&bagangs).Error; err != nil {
-		c.Log.WithError(err).Error("error fetching bagangs")
+	scope, err := resolveReportBagangScope(tx, auth, "")
+	if err != nil {
+		return nil, dashboardScopeError(c.Log, err, "error resolving bagang performance scope")
+	}
+	season := new(entity.Season)
+	if err := tx.Where("id = ?", seasonID).First(season).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fiber.ErrNotFound
+		}
+		c.Log.WithError(err).Error("error fetching season for bagang performance")
 		return nil, fiber.ErrInternalServerError
 	}
-
-	bagangMap := make(map[string]entity.Bagang)
-	for _, b := range bagangs {
-		bagangMap[b.ID] = b
+	dateRange, err := buildReportDateRange(*season, "", "")
+	if err != nil {
+		return nil, err
 	}
 
-	// Get harvests grouped by bagang
+	type performanceValue struct {
+		harvestValue   int
+		salesRevenue   int
+		productionCost int
+	}
+	values := make(map[string]performanceValue)
+
 	var harvests []entity.Harvest
-	if err := tx.Where("harvests_season = ?", seasonID).Find(&harvests).Error; err != nil {
+	harvestQuery := scope.apply(tx.Where("harvests_season = ?", seasonID), "bagang_id")
+	if err := harvestQuery.Find(&harvests).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching harvests for bagang performance")
 		return nil, fiber.ErrInternalServerError
 	}
-
-	revenueByBagang := make(map[string]int)
-	for _, h := range harvests {
-		revenueByBagang[h.BagangID] += int(float64(h.Price) * h.Weight)
+	for _, harvest := range harvests {
+		value := values[harvest.BagangID]
+		value.harvestValue += calculateHarvestValue(harvest.Price, harvest.Weight)
+		values[harvest.BagangID] = value
 	}
 
-	// Get costs grouped by bagang
 	var costs []entity.ProductionCost
-	if err := tx.Where("production_costs_season = ?", seasonID).Find(&costs).Error; err != nil {
+	costQuery := scope.apply(tx.Where("production_costs_season = ?", seasonID), "bagang_id")
+	if err := costQuery.Find(&costs).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching costs for bagang performance")
 		return nil, fiber.ErrInternalServerError
 	}
-
-	costByBagang := make(map[string]int)
 	for _, cost := range costs {
-		costByBagang[cost.BagangID] += cost.Price
+		value := values[cost.BagangID]
+		value.productionCost += cost.Price
+		values[cost.BagangID] = value
 	}
 
-	// Build performance data
-	data := make([]model.BagangPerformanceItem, 0)
-	for bagangID, revenue := range revenueByBagang {
-		bagang, exists := bagangMap[bagangID]
-		if !exists {
+	var sales []entity.Sales
+	salesQuery := dateRange.apply(preloadSalesDetails(tx, reportBagangScope{}), "issued_at")
+	salesQuery = applySalesDetailScope(salesQuery, scope)
+	if err := salesQuery.Find(&sales).Error; err != nil {
+		c.Log.WithError(err).Error("error fetching sales for bagang performance")
+		return nil, fiber.ErrInternalServerError
+	}
+	for _, sale := range sales {
+		for _, detail := range sale.SalesDetails {
+			if !detailInBagangScope(detail, scope) {
+				continue
+			}
+			bagangID := pointerValue(detail.BagangID)
+			value := values[bagangID]
+			value.salesRevenue += calculateSaleDetailValue(detail.Weight, detail.Price)
+			values[bagangID] = value
+		}
+	}
+
+	data := make([]model.BagangPerformanceItem, 0, len(values))
+	for bagangID, value := range values {
+		if bagangID != "" && scope.Names[bagangID] == "" {
 			continue
 		}
-		cost := costByBagang[bagangID]
 		data = append(data, model.BagangPerformanceItem{
-			BagangID:   bagangID,
-			BagangName: bagang.Name,
-			Revenue:    revenue,
-			Cost:       cost,
-			Profit:     revenue - cost,
+			BagangID:       stringPointer(bagangID),
+			BagangName:     scope.name(bagangID),
+			HarvestValue:   value.harvestValue,
+			SalesRevenue:   value.salesRevenue,
+			ProductionCost: value.productionCost,
+			NetProfit:      value.salesRevenue - value.productionCost,
 		})
 	}
-
-	// Sort by profit descending
 	sort.Slice(data, func(i, j int) bool {
-		return data[i].Profit > data[j].Profit
+		if data[i].NetProfit == data[j].NetProfit {
+			return data[i].BagangName < data[j].BagangName
+		}
+		return data[i].NetProfit > data[j].NetProfit
 	})
-
-	// Limit results
 	if limit > 0 && len(data) > limit {
 		data = data[:limit]
 	}
-
 	return &model.BagangPerformanceResponse{Data: data}, nil
 }
 
-// GetRecentSales returns recent sales with payment status
-func (c *DashboardUseCase) GetRecentSales(ctx context.Context, limit int) (*model.RecentSalesResponse, error) {
+func (c *DashboardUseCase) GetRecentSales(ctx context.Context, auth *model.Auth, seasonID int, limit int) (*model.RecentSalesResponse, error) {
 	tx := c.DB.WithContext(ctx)
+	season := new(entity.Season)
+	if err := tx.Where("id = ?", seasonID).First(season).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fiber.ErrNotFound
+		}
+		c.Log.WithError(err).Error("error fetching season for recent sales")
+		return nil, fiber.ErrInternalServerError
+	}
+	scope, err := resolveReportBagangScope(tx, auth, "")
+	if err != nil {
+		return nil, dashboardScopeError(c.Log, err, "error resolving recent sales scope")
+	}
+	dateRange, err := buildReportDateRange(*season, "", "")
+	if err != nil {
+		return nil, err
+	}
 
-	var salesList []entity.Sales
-	query := tx.Preload("SalesDetails").Preload("TransactionDetails").Order("issued_at desc")
+	query := dateRange.apply(preloadSalesDetails(tx, reportBagangScope{}).Preload("TransactionDetails"), "issued_at")
+	query = applySalesDetailScope(query, scope).Order("issued_at desc")
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	if err := query.Find(&salesList).Error; err != nil {
+	var sales []entity.Sales
+	if err := query.Find(&sales).Error; err != nil {
 		c.Log.WithError(err).Error("error fetching recent sales")
 		return nil, fiber.ErrInternalServerError
 	}
 
-	data := make([]model.RecentSaleItem, len(salesList))
-	for i, sale := range salesList {
-		totalAmount := 0
-		for _, detail := range sale.SalesDetails {
-			totalAmount += detail.Weight * detail.Price
-		}
-
-		totalPaid := 0
-		for _, tx := range sale.TransactionDetails {
-			totalPaid += tx.Amount
-		}
-
+	data := make([]model.RecentSaleItem, len(sales))
+	for i, sale := range sales {
+		totalAmount, totalPaid := calculateSaleTotalsForScope(sale, scope)
 		data[i] = model.RecentSaleItem{
 			ID:          sale.ID,
 			Customer:    sale.Customer,
+			BagangName:  salesBagangNames(sale, scope),
 			IssuedAt:    sale.IssuedAt.Format("2006-01-02"),
 			TotalAmount: totalAmount,
 			TotalPaid:   totalPaid,
 			IsPaidOff:   sale.IsPaidOff,
 		}
 	}
-
 	return &model.RecentSalesResponse{Data: data}, nil
+}
+
+func dashboardScopeError(log *logrus.Logger, err error, message string) error {
+	if _, ok := err.(*fiber.Error); ok {
+		return err
+	}
+	log.WithError(err).Error(message)
+	return fiber.ErrInternalServerError
+}
+
+func (c *DashboardUseCase) loadSeason(db *gorm.DB, seasonID int, message string) (*entity.Season, error) {
+	season := new(entity.Season)
+	if err := db.Where("id = ?", seasonID).First(season).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fiber.ErrNotFound
+		}
+		c.Log.WithError(err).Error(message)
+		return nil, fiber.ErrInternalServerError
+	}
+	return season, nil
 }

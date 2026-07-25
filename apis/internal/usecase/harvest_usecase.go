@@ -72,6 +72,10 @@ func (c *HarvestUseCase) Create(ctx context.Context, auth *model.Auth, request *
 	if !bagangInScope(auth, bagang) {
 		return nil, fiber.ErrForbidden
 	}
+	if err := lockBagangRow(tx, request.BagangID); err != nil {
+		c.Log.WithError(err).Error("error locking bagang for harvest creation")
+		return nil, fiber.ErrNotFound
+	}
 
 	createdBy, createdByName, err := c.resolveHarvestCreator(auth, bagang, request.CreatedBy)
 	if err != nil {
@@ -125,6 +129,10 @@ func (c *HarvestUseCase) Update(ctx context.Context, auth *model.Auth, id string
 	if !bagangInScope(auth, bagang) {
 		return nil, fiber.ErrForbidden
 	}
+	if err := lockBagangRow(tx, harvest.BagangID); err != nil {
+		c.Log.WithError(err).Error("error locking bagang for harvest update")
+		return nil, fiber.ErrNotFound
+	}
 
 	if request.HarvestDate != "" {
 		harvestDate, err := time.Parse("2006-01-02", request.HarvestDate)
@@ -175,6 +183,9 @@ func (c *HarvestUseCase) Delete(ctx context.Context, auth *model.Auth, id string
 	}
 	if !bagangInScope(auth, bagang) {
 		return fiber.ErrForbidden
+	}
+	if err := lockBagangRow(tx, harvest.BagangID); err != nil {
+		return fiber.ErrNotFound
 	}
 
 	if err := c.HarvestRepository.Delete(tx, harvest); err != nil {

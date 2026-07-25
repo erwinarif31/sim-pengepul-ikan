@@ -10,7 +10,7 @@ interface HarvestTrendChartProps {
 
 export default function HarvestTrendChart({ data, isLoading }: HarvestTrendChartProps) {
     const categories = data?.map((item) => item.month) ?? [];
-    const revenues = data?.map((item) => item.revenue) ?? [];
+    const harvestValues = data?.map((item) => item.harvest_value) ?? [];
 
     const options: ApexOptions = {
         legend: {
@@ -88,21 +88,21 @@ export default function HarvestTrendChart({ data, isLoading }: HarvestTrendChart
 
     const series = [
         {
-            name: "Pendapatan",
-            data: revenues,
+            name: "Nilai Panen",
+            data: harvestValues,
         },
     ];
 
     if (isLoading) {
         return (
-            <ComponentCard title="Tren Pendapatan Panen" desc="Pendapatan panen per bulan">
+            <ComponentCard title="Tren Nilai Panen" desc="Nilai hasil tangkapan per bulan">
                 <div className="h-[280px] bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
             </ComponentCard>
         );
     }
 
     return (
-        <ComponentCard title="Tren Pendapatan Panen" desc="Pendapatan panen per bulan">
+        <ComponentCard title="Tren Nilai Panen" desc="Nilai hasil tangkapan per bulan">
             <div className="max-w-full overflow-x-auto custom-scrollbar">
                 <div className="-ml-4 min-w-[300px] sm:min-w-[500px] xl:min-w-full pl-2">
                     <Chart options={options} series={series} type="area" height={280} />

@@ -28,6 +28,7 @@ const DetailSalesPage = () => {
     const [itemSearch, setItemSearch] = useState("");
     const { user } = useAuth();
     const canMutateSales = user?.role !== "WORKER";
+    const canMutatePayments = user?.role === "ADMIN";
 
     const { data: response, isLoading } = useSalesDetailQuery(salesId);
     const salesData = response?.data?.data;
@@ -47,8 +48,8 @@ const DetailSalesPage = () => {
                     setIsItemModalOpen(false);
                     toast.success("Item diubah");
                 },
-                onError: () => {
-                    toast.error("Gagal mengubah");
+                onError: (error: any) => {
+                    toast.error(error?.response?.data?.errors || "Gagal mengubah");
                 },
             });
         } else {
@@ -57,8 +58,8 @@ const DetailSalesPage = () => {
                     setIsItemModalOpen(false);
                     toast.success("Item ditambahkan");
                 },
-                onError: () => {
-                    toast.error("Gagal menambahkan");
+                onError: (error: any) => {
+                    toast.error(error?.response?.data?.errors || "Gagal menambahkan");
                 },
             });
         }
@@ -114,6 +115,7 @@ const DetailSalesPage = () => {
 
     const itemColumns: TableHeader[] = [
         { key: "harvest_types", title: "Jenis Ikan" },
+        { key: "bagang_name", title: "Bagang Sumber" },
         { key: "weight", title: "Berat (kg)", hideOnMobile: true },
         { key: "price", title: "Harga", hideOnMobile: true, render: (row) => `Rp ${row.price.toLocaleString("id-ID")}` },
         { key: "subtotal", title: "Subtotal", render: (row) => `Rp ${row.subtotal.toLocaleString("id-ID")}` },
@@ -136,7 +138,7 @@ const DetailSalesPage = () => {
     const paymentColumns: TableHeader[] = [
         { key: "paid_at", title: "Tanggal", render: (row) => new Date(row.paid_at).toLocaleDateString("id-ID") },
         { key: "amount", title: "Jumlah", render: (row) => `Rp ${row.amount.toLocaleString("id-ID")}` },
-        ...(canMutateSales ? [{
+        ...(canMutatePayments ? [{
             key: "actions", title: "Aksi", hideOnMobile: true, render: (row: any) => (
                 <div className="flex gap-2">
                     <button onClick={() => openEditPayment(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
@@ -184,7 +186,9 @@ const DetailSalesPage = () => {
                 </div>
                 <div className="p-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                     <p className="text-sm text-gray-500">Sisa Tagihan</p>
-                    <p className="text-lg font-semibold text-red-500">Rp {remaining.toLocaleString("id-ID")}</p>
+                    <p className="text-lg font-semibold text-red-500">
+                        {salesData.payments_visible ? `Rp ${remaining.toLocaleString("id-ID")}` : "Dikelola Admin"}
+                    </p>
                 </div>
             </div>
 
@@ -208,13 +212,13 @@ const DetailSalesPage = () => {
             <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
-                    {canMutateSales && <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>}
+                    {canMutatePayments && <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>}
                 </div>
                 <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
             </div>
 
             <AddItemModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSubmit={handleItemSubmit} isLoading={isAddingItem || isUpdatingItem} initialData={editingItem} />
-            <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} onSubmit={handlePaymentSubmit} isLoading={isAddingPayment || isUpdatingPayment} maxAmount={remaining + (editingPayment ? editingPayment.amount : 0)} initialData={editingPayment} />
+            {canMutatePayments && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} onSubmit={handlePaymentSubmit} isLoading={isAddingPayment || isUpdatingPayment} maxAmount={remaining + (editingPayment ? editingPayment.amount : 0)} initialData={editingPayment} />}
         </div>
     );
 };

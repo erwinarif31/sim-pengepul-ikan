@@ -14,6 +14,8 @@ import CustomerPage from "./pages/Customer/page";
 import DetailWorkerPage from "./pages/Worker/Detail/page";
 import PayrollPage from "./pages/Payroll/page";
 import LoginPage from "./pages/Login/page";
+import StockPage from "./pages/Stock/page";
+import FinancialReportPage from "./pages/FinancialReport/page";
 import ProtectedRoute from "./component/common/ProtectedRoute";
 
 function App() {
@@ -69,6 +71,15 @@ function App() {
                 />
                 <Route path="/pelanggan" element={<CustomerPage />} />
                 <Route path="/penggajian" element={<PayrollPage />} />
+                <Route path="/stok" element={<StockPage />} />
+                <Route
+                    path="/laporan-keuangan"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN", "OWNER"]} fallbackTo="/">
+                            <FinancialReportPage />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* Pembelian (Purchase from Bagang) */}
                 <Route path="/pembelian" element={<PurchasePage />} />

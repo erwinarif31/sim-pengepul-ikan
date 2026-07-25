@@ -118,6 +118,8 @@ func Bootstrap(config *BootstrapConfig) {
 		salesRepository,
 		seasonRepository,
 	)
+	stockUseCase := usecase.NewStockUseCase(config.DB, config.Log)
+	financialReportUseCase := usecase.NewFinancialReportUseCase(config.DB, config.Log)
 	// setup controller
 	userController := http.NewUserController(userUseCase, config.Log)
 	// contactController := http.NewContactController(contactUseCase, config.Log)
@@ -130,22 +132,26 @@ func Bootstrap(config *BootstrapConfig) {
 	customerController := http.NewCustomerController(config.Log, customerUseCase)
 	payrollController := http.NewPayrollController(config.Log, payrollUseCase)
 	dashboardController := http.NewDashboardController(config.Log, dashboardUseCase)
+	stockController := http.NewStockController(config.Log, stockUseCase)
+	financialReportController := http.NewFinancialReportController(config.Log, financialReportUseCase)
 
 	// setup middleware
 	authMiddleware := middleware.NewAuth(userUseCase)
 
 	routeConfig := route.RouteConfig{
-		App:                      config.App,
-		AuthMiddleware:           authMiddleware,
-		UserController:           userController,
-		BagangController:         bagangController,
-		SalesController:          salesController,
-		MasterDataController:     masterDataController,
-		HarvestController:        harvestController,
-		ProductionCostController: productionCostController,
-		CustomerController:       customerController,
-		PayrollController:        payrollController,
-		DashboardController:      dashboardController,
+		App:                       config.App,
+		AuthMiddleware:            authMiddleware,
+		UserController:            userController,
+		BagangController:          bagangController,
+		SalesController:           salesController,
+		MasterDataController:      masterDataController,
+		HarvestController:         harvestController,
+		ProductionCostController:  productionCostController,
+		CustomerController:        customerController,
+		PayrollController:         payrollController,
+		DashboardController:       dashboardController,
+		StockController:           stockController,
+		FinancialReportController: financialReportController,
 	}
 	routeConfig.Setup()
 }

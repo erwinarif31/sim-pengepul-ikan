@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/erwinarif31/catchery-api/internal/entity"
@@ -45,9 +46,14 @@ func NewSalesUseCase(
 }
 
 func (c *SalesUseCase) Search(ctx context.Context, auth *model.Auth, request *model.SearchSalesRequest) ([]model.SalesResponse, error) {
-	tx := c.DB.WithContext(ctx).Preload("SalesDetails").Preload("TransactionDetails").Preload("Bagang")
-	if err := c.applySalesScope(tx, auth, request); err != nil {
+	tx := c.DB.WithContext(ctx)
+	scope, err := c.resolveSalesScope(tx, auth)
+	if err != nil {
 		return nil, err
+	}
+	tx = preloadSalesDetails(tx, scope)
+	if auth.Role == "ADMIN" {
+		tx = tx.Preload("TransactionDetails")
 	}
 
 	sales, err := c.SalesRepository.Search(tx, request)
@@ -58,22 +64,27 @@ func (c *SalesUseCase) Search(ctx context.Context, auth *model.Auth, request *mo
 
 	responses := make([]model.SalesResponse, len(sales))
 	for i, sale := range sales {
-		responses[i] = *converter.SalesToResponse(&sale)
+		responses[i] = *c.salesResponse(&sale, auth, scope)
 	}
 
 	return responses, nil
 }
 
 func (c *SalesUseCase) FindById(ctx context.Context, auth *model.Auth, id int) (*model.SalesResponse, error) {
-	tx := c.DB.WithContext(ctx).Preload("SalesDetails").Preload("TransactionDetails").Preload("Bagang")
+	tx := c.DB.WithContext(ctx)
+	scope, err := c.resolveSalesScope(tx, auth)
+	if err != nil {
+		return nil, err
+	}
+	tx = preloadSalesDetails(tx, scope)
+	if auth.Role == "ADMIN" {
+		tx = tx.Preload("TransactionDetails")
+	}
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, id); err != nil {
 		return nil, fiber.ErrNotFound
 	}
-	if err := c.authorizeSales(tx, auth, sales); err != nil {
-		return nil, err
-	}
-	return converter.SalesToResponse(sales), nil
+	return c.salesResponse(sales, auth, scope), nil
 }
 
 func (c *SalesUseCase) Create(ctx context.Context, auth *model.Auth, request *model.CreateSalesRequest) (*model.SalesResponse, error) {
@@ -87,18 +98,8 @@ func (c *SalesUseCase) Create(ctx context.Context, auth *model.Auth, request *mo
 		c.Log.WithError(err).Error("error validating request body")
 		return nil, fiber.ErrBadRequest
 	}
-	bagang := new(entity.Bagang)
-	if err := c.BagangRepository.FindById(tx.Preload("Worker").Preload("Owner"), bagang, request.BagangID); err != nil {
-		c.Log.WithError(err).Error("error finding bagang")
-		return nil, fiber.ErrNotFound
-	}
-	if !bagangInScope(auth, bagang) {
-		return nil, fiber.ErrForbidden
-	}
-
 	sales := &entity.Sales{
 		Customer:  request.Customer,
-		BagangID:  &request.BagangID,
 		IssuedAt:  time.Now(),
 		IsPaidOff: false,
 	}
@@ -113,8 +114,7 @@ func (c *SalesUseCase) Create(ctx context.Context, auth *model.Auth, request *mo
 		return nil, fiber.ErrInternalServerError
 	}
 
-	sales.Bagang = bagang
-	return converter.SalesToResponse(sales), nil
+	return c.salesResponse(sales, auth, reportBagangScope{}), nil
 }
 
 func (c *SalesUseCase) AddSalesItem(ctx context.Context, auth *model.Auth, salesId int, request *model.CreateSalesItemRequest) (*model.SalesResponse, error) {
@@ -128,20 +128,31 @@ func (c *SalesUseCase) AddSalesItem(ctx context.Context, auth *model.Auth, sales
 		c.Log.WithError(err).Error("error validating request body")
 		return nil, fiber.ErrBadRequest
 	}
+	if err := validateSalesDetailWeight(request.Weight); err != nil {
+		return nil, err
+	}
 
 	// Verify Sale exists
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
 		return nil, fiber.ErrNotFound
 	}
-	if err := c.authorizeSales(tx, auth, sales); err != nil {
+	if err := c.authorizeSalesDetailBagang(tx, auth, &request.BagangID); err != nil {
+		return nil, err
+	}
+	harvestType, err := canonicalHarvestType(tx, request.HarvestType)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateSalesDetailStock(tx, 0, request.BagangID, harvestType, request.Weight); err != nil {
 		return nil, err
 	}
 
 	// Create Detail
 	detail := &entity.SalesDetail{
 		SalesID:     salesId,
-		HarvestType: request.HarvestType,
+		BagangID:    &request.BagangID,
+		HarvestType: harvestType,
 		Weight:      request.Weight,
 		Price:       request.Price,
 	}
@@ -151,7 +162,7 @@ func (c *SalesUseCase) AddSalesItem(ctx context.Context, auth *model.Auth, sales
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, salesId)
+	response, err := c.recalculateStatus(tx, auth, salesId)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +178,7 @@ func (c *SalesUseCase) AddPayment(ctx context.Context, auth *model.Auth, salesId
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := authorizeSalesMutation(auth); err != nil {
+	if err := authorizePaymentMutation(auth); err != nil {
 		return nil, err
 	}
 	if err := c.Validate.Struct(request); err != nil {
@@ -179,9 +190,6 @@ func (c *SalesUseCase) AddPayment(ctx context.Context, auth *model.Auth, salesId
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
 		return nil, fiber.ErrNotFound
-	}
-	if err := c.authorizeSales(tx, auth, sales); err != nil {
-		return nil, err
 	}
 	if err := c.validatePaymentAmount(tx, salesId, request.Amount, 0); err != nil {
 		return nil, err
@@ -199,7 +207,7 @@ func (c *SalesUseCase) AddPayment(ctx context.Context, auth *model.Auth, salesId
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, salesId)
+	response, err := c.recalculateStatus(tx, auth, salesId)
 	if err != nil {
 		return nil, err
 	}
@@ -222,16 +230,35 @@ func (c *SalesUseCase) UpdateSalesItem(ctx context.Context, auth *model.Auth, it
 		c.Log.WithError(err).Error("error validating request body")
 		return nil, fiber.ErrBadRequest
 	}
+	if err := validateSalesDetailWeight(request.Weight); err != nil {
+		return nil, err
+	}
 
 	detail := new(entity.SalesDetail)
 	if err := c.SalesDetailRepository.FindById(tx, detail, itemId); err != nil {
 		return nil, fiber.ErrNotFound
 	}
-	if err := c.authorizeSalesID(tx, auth, detail.SalesID); err != nil {
+	if err := c.authorizeSalesDetailBagang(tx, auth, detail.BagangID); err != nil {
+		return nil, err
+	}
+	if err := c.authorizeSalesDetailBagang(tx, auth, &request.BagangID); err != nil {
+		return nil, err
+	}
+	harvestType, err := canonicalHarvestType(tx, request.HarvestType)
+	if err != nil {
+		return nil, err
+	}
+	if detail.BagangID != nil {
+		if err := lockBagangRows(tx, *detail.BagangID, request.BagangID); err != nil {
+			return nil, fiber.ErrNotFound
+		}
+	}
+	if err := validateSalesDetailStock(tx, detail.ID, request.BagangID, harvestType, request.Weight); err != nil {
 		return nil, err
 	}
 
-	detail.HarvestType = request.HarvestType
+	detail.BagangID = &request.BagangID
+	detail.HarvestType = harvestType
 	detail.Weight = request.Weight
 	detail.Price = request.Price
 
@@ -240,7 +267,7 @@ func (c *SalesUseCase) UpdateSalesItem(ctx context.Context, auth *model.Auth, it
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, detail.SalesID)
+	response, err := c.recalculateStatus(tx, auth, detail.SalesID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +292,13 @@ func (c *SalesUseCase) DeleteSalesItem(ctx context.Context, auth *model.Auth, it
 	}
 
 	salesId := detail.SalesID
-	if err := c.authorizeSalesID(tx, auth, salesId); err != nil {
+	if err := c.authorizeSalesDetailBagang(tx, auth, detail.BagangID); err != nil {
 		return nil, err
+	}
+	if detail.BagangID != nil {
+		if err := lockBagangRow(tx, *detail.BagangID); err != nil {
+			return nil, fiber.ErrNotFound
+		}
 	}
 
 	if err := c.SalesDetailRepository.Delete(tx, detail); err != nil {
@@ -274,7 +306,7 @@ func (c *SalesUseCase) DeleteSalesItem(ctx context.Context, auth *model.Auth, it
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, salesId)
+	response, err := c.recalculateStatus(tx, auth, salesId)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +322,7 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, auth *model.Auth, paym
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := authorizeSalesMutation(auth); err != nil {
+	if err := authorizePaymentMutation(auth); err != nil {
 		return nil, err
 	}
 	if err := c.Validate.Struct(request); err != nil {
@@ -301,9 +333,6 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, auth *model.Auth, paym
 	payment := new(entity.TransactionDetail)
 	if err := c.TransactionDetailRepository.FindById(tx, payment, paymentId); err != nil {
 		return nil, fiber.ErrNotFound
-	}
-	if err := c.authorizeSalesID(tx, auth, payment.SalesID); err != nil {
-		return nil, err
 	}
 	if err := c.validatePaymentAmount(tx, payment.SalesID, request.Amount, paymentId); err != nil {
 		return nil, err
@@ -316,7 +345,7 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, auth *model.Auth, paym
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, payment.SalesID)
+	response, err := c.recalculateStatus(tx, auth, payment.SalesID)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +360,7 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, auth *model.Auth, paym
 func (c *SalesUseCase) DeletePayment(ctx context.Context, auth *model.Auth, paymentId int) (*model.SalesResponse, error) {
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
-	if err := authorizeSalesMutation(auth); err != nil {
+	if err := authorizePaymentMutation(auth); err != nil {
 		return nil, err
 	}
 
@@ -341,16 +370,12 @@ func (c *SalesUseCase) DeletePayment(ctx context.Context, auth *model.Auth, paym
 	}
 
 	salesId := payment.SalesID
-	if err := c.authorizeSalesID(tx, auth, salesId); err != nil {
-		return nil, err
-	}
-
 	if err := c.TransactionDetailRepository.Delete(tx, payment); err != nil {
 		c.Log.WithError(err).Error("error deleting payment")
 		return nil, fiber.ErrInternalServerError
 	}
 
-	response, err := c.recalculateStatus(tx, salesId)
+	response, err := c.recalculateStatus(tx, auth, salesId)
 	if err != nil {
 		return nil, err
 	}
@@ -362,9 +387,9 @@ func (c *SalesUseCase) DeletePayment(ctx context.Context, auth *model.Auth, paym
 	return response, nil
 }
 
-func (c *SalesUseCase) recalculateStatus(db *gorm.DB, salesId int) (*model.SalesResponse, error) {
+func (c *SalesUseCase) recalculateStatus(db *gorm.DB, auth *model.Auth, salesId int) (*model.SalesResponse, error) {
 	sales := new(entity.Sales)
-	if err := c.SalesRepository.FindById(db.Preload("SalesDetails").Preload("TransactionDetails").Preload("Bagang"), sales, salesId); err != nil {
+	if err := c.SalesRepository.FindById(db.Preload("SalesDetails").Preload("SalesDetails.Bagang").Preload("TransactionDetails"), sales, salesId); err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -391,9 +416,15 @@ func (c *SalesUseCase) recalculateStatus(db *gorm.DB, salesId int) (*model.Sales
 		// Update response to match new state
 		response.IsPaidOff = shouldBePaidOff
 		response.PaidOffAt = paidOffAt
+		sales.IsPaidOff = shouldBePaidOff
+		sales.PaidOffAt = paidOffAt
 	}
 
-	return response, nil
+	scope, err := c.resolveSalesScope(db, auth)
+	if err != nil {
+		return nil, err
+	}
+	return c.salesResponse(sales, auth, scope), nil
 }
 
 func (c *SalesUseCase) validatePaymentAmount(db *gorm.DB, salesId int, amount int, ignoredPaymentId int) error {
@@ -423,62 +454,113 @@ func (c *SalesUseCase) validatePaymentAmount(db *gorm.DB, salesId int, amount in
 	return nil
 }
 
-func (c *SalesUseCase) applySalesScope(db *gorm.DB, auth *model.Auth, request *model.SearchSalesRequest) error {
+func (c *SalesUseCase) resolveSalesScope(db *gorm.DB, auth *model.Auth) (reportBagangScope, error) {
+	return resolveReportBagangScope(db, auth, "")
+}
+
+func (c *SalesUseCase) salesResponse(sales *entity.Sales, auth *model.Auth, scope reportBagangScope) *model.SalesResponse {
+	response := converter.SalesToResponse(sales)
+	if scope.filtered {
+		visibleDetails := response.SalesDetails[:0]
+		response.TotalAmount = 0
+		for _, detail := range response.SalesDetails {
+			if detail.BagangID == nil || !bagangIDInScope(*detail.BagangID, scope) {
+				continue
+			}
+			visibleDetails = append(visibleDetails, detail)
+			response.TotalAmount += detail.Subtotal
+		}
+		response.SalesDetails = visibleDetails
+	}
+	if auth.Role != "ADMIN" {
+		response.PaymentsVisible = false
+		response.PaidOffAt = nil
+		response.TransactionDetails = nil
+		response.TotalPaid = 0
+	}
+	return response
+}
+
+func (c *SalesUseCase) authorizeSalesDetailBagang(db *gorm.DB, auth *model.Auth, bagangID *string) error {
 	if auth == nil {
 		return fiber.ErrUnauthorized
 	}
 	if auth.Role == "ADMIN" {
 		return nil
 	}
-	if auth.WorkerID == nil {
-		return fiber.ErrForbidden
-	}
-
-	var bagangIDs []string
-	query := db.Model(&entity.Bagang{})
-	if auth.Role == "OWNER" {
-		query = query.Where("owner_id = ?", *auth.WorkerID)
-	} else if auth.Role == "WORKER" {
-		query = query.Where("worker_id = ?", *auth.WorkerID)
-	} else {
-		return fiber.ErrUnauthorized
-	}
-	if request.BagangID != "" {
-		query = query.Where("id = ?", request.BagangID)
-	}
-	if err := query.Pluck("id", &bagangIDs).Error; err != nil {
-		c.Log.WithError(err).Error("error resolving scoped bagangs for sales")
-		return fiber.ErrInternalServerError
-	}
-	request.BagangID = ""
-	request.BagangIDs = bagangIDs
-	return nil
-}
-
-func (c *SalesUseCase) authorizeSalesID(db *gorm.DB, auth *model.Auth, salesID int) error {
-	sales := new(entity.Sales)
-	if err := c.SalesRepository.FindById(db, sales, salesID); err != nil {
-		return fiber.ErrNotFound
-	}
-	return c.authorizeSales(db, auth, sales)
-}
-
-func (c *SalesUseCase) authorizeSales(db *gorm.DB, auth *model.Auth, sales *entity.Sales) error {
-	if auth == nil {
-		return fiber.ErrUnauthorized
-	}
-	if auth.Role == "ADMIN" {
-		return nil
-	}
-	if sales.BagangID == nil || *sales.BagangID == "" {
+	if bagangID == nil || *bagangID == "" {
 		return fiber.ErrForbidden
 	}
 	bagang := new(entity.Bagang)
-	if err := c.BagangRepository.FindById(db.Preload("Worker").Preload("Owner"), bagang, *sales.BagangID); err != nil {
-		c.Log.WithError(err).Error("error finding sales bagang")
+	if err := c.BagangRepository.FindById(db.Preload("Worker").Preload("Owner"), bagang, *bagangID); err != nil {
 		return fiber.ErrNotFound
 	}
 	if !bagangInScope(auth, bagang) {
+		return fiber.ErrForbidden
+	}
+	return nil
+}
+
+func canonicalHarvestType(tx *gorm.DB, requested string) (string, error) {
+	var harvestType entity.HarvestType
+	if err := tx.Where("LOWER(TRIM(name)) = ?", normalizeFishType(requested)).First(&harvestType).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", fiber.NewError(fiber.StatusBadRequest, "invalid harvest type")
+		}
+		return "", fiber.ErrInternalServerError
+	}
+	return harvestType.Name, nil
+}
+
+func validateSalesDetailWeight(weight float64) error {
+	if weight > 999999999.999 || math.Abs(weight-math.Round(weight*1000)/1000) > 1e-9 {
+		return fiber.NewError(fiber.StatusBadRequest, "weight must use at most 3 decimal places")
+	}
+	return nil
+}
+
+func validateSalesDetailStock(tx *gorm.DB, detailID int, bagangID, harvestType string, weight float64) error {
+	if err := lockBagangRow(tx, bagangID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fiber.ErrNotFound
+		}
+		return fiber.ErrInternalServerError
+	}
+
+	normalizedHarvestType := normalizeFishType(harvestType)
+	var stockIn float64
+	if err := tx.Model(&entity.Harvest{}).
+		Where("bagang_id = ? AND LOWER(TRIM(harvest_type)) = ?", bagangID, normalizedHarvestType).
+		Select("COALESCE(SUM(weight), 0)").
+		Scan(&stockIn).Error; err != nil {
+		return fiber.ErrInternalServerError
+	}
+
+	salesQuery := tx.Model(&entity.SalesDetail{}).
+		Where("bagang_id = ? AND LOWER(TRIM(harvest_types)) = ?", bagangID, normalizedHarvestType)
+	if detailID > 0 {
+		salesQuery = salesQuery.Where("id <> ?", detailID)
+	}
+	var stockOut float64
+	if err := salesQuery.Select("COALESCE(SUM(weight), 0)").Scan(&stockOut).Error; err != nil {
+		return fiber.ErrInternalServerError
+	}
+
+	if !hasSufficientStock(stockIn, stockOut, weight) {
+		return fiber.NewError(fiber.StatusBadRequest, "insufficient stock for selected bagang and harvest type")
+	}
+	return nil
+}
+
+func hasSufficientStock(stockIn, stockOut, requestedWeight float64) bool {
+	return stockOut+requestedWeight <= stockIn+1e-9
+}
+
+func authorizePaymentMutation(auth *model.Auth) error {
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+	if auth.Role != "ADMIN" {
 		return fiber.ErrForbidden
 	}
 	return nil

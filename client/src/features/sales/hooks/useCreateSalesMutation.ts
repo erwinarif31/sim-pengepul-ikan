@@ -6,7 +6,7 @@ const useCreateSalesMutation = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: { customer: string; bagang_id: string }) => SalesService.createSales(data),
+        mutationFn: (data: { customer: string }) => SalesService.createSales(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [SalesService.queries.LIST] });
             toast.success("Penjualan berhasil dibuat");

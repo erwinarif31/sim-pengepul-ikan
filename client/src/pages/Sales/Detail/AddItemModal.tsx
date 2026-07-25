@@ -7,10 +7,12 @@ import Input from "../../../component/form/input/InputField";
 import Select from "../../../component/form/Select";
 import { Modal } from "../../../component/ui/modal";
 import useHarvestTypeQuery from "../../../features/harvest-type/hooks/useHarvestType";
+import useBagangQuery from "../../../features/bagang/hooks/useBagangQuery";
 
 const schema = z.object({
     harvest_type: z.string().min(1, "Jenis ikan wajib dipilih"),
-    weight: z.string().transform((v) => parseFloat(v)).pipe(z.number().min(1)),
+    bagang_id: z.string().uuid("Bagang wajib dipilih"),
+    weight: z.string().transform((v) => parseFloat(v)).pipe(z.number().gt(0)),
     price: z.string().transform((v) => parseInt(v)).pipe(z.number().min(0)),
 });
 
@@ -33,6 +35,7 @@ export default function AddItemModal({
     initialData,
 }: AddItemModalProps) {
     const { data: harvestTypeResponse } = useHarvestTypeQuery();
+    const { data: bagangResponse } = useBagangQuery();
     const harvestTypes = useMemo(() => {
         return (
             harvestTypeResponse?.data?.data?.map((t) => ({
@@ -41,6 +44,14 @@ export default function AddItemModal({
             })) || []
         );
     }, [harvestTypeResponse]);
+    const bagangs = useMemo(() => {
+        return (
+            bagangResponse?.data?.data?.map((bagang) => ({
+                value: bagang.id,
+                label: bagang.name,
+            })) || []
+        );
+    }, [bagangResponse]);
 
     const {
         register,
@@ -58,14 +69,17 @@ export default function AddItemModal({
             if (initialData) {
                 reset({
                     harvest_type: initialData.harvest_types,
+                    bagang_id: initialData.bagang_id || "",
                     weight: initialData.weight.toString(),
                     price: initialData.price.toString(),
                 });
                 // Force update value for Select component if needed, though reset should handle it
                 setValue("harvest_type", initialData.harvest_types);
+                setValue("bagang_id", initialData.bagang_id || "");
             } else {
                 reset({
                     harvest_type: "",
+                    bagang_id: "",
                     weight: "",
                     price: "",
                 });
@@ -101,10 +115,22 @@ export default function AddItemModal({
                         <Input
                             type="number"
                             placeholder="0"
-                            step={0.1}
+                            step={0.001}
                             error={!!errors.weight}
                             hint={errors.weight?.message}
                             {...register("weight")}
+                        />
+                    </div>
+                    <div>
+                        <Label>Bagang Sumber</Label>
+                        <Select
+                            options={bagangs}
+                            placeholder="Pilih Bagang Sumber"
+                            error={!!errors.bagang_id}
+                            hint={errors.bagang_id?.message}
+                            {...register("bagang_id")}
+                            onChange={(value) => setValue("bagang_id", value as string)}
+                            value={watch("bagang_id")}
                         />
                     </div>
                     <div>

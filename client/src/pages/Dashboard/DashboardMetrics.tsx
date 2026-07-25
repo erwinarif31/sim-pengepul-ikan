@@ -23,8 +23,8 @@ export default function DashboardMetricsCard({ data, isLoading }: DashboardMetri
     const row1Metrics = [
         {
             id: 1,
-            title: "Total Panen",
-            value: formatCurrency(data?.total_harvest_revenue ?? 0),
+            title: "Nilai Panen",
+            value: formatCurrency(data?.total_harvest_value ?? 0),
             icon: BoxIconLine,
             iconBg: "bg-brand-50 dark:bg-brand-500/10",
             iconColor: "text-brand-500",

@@ -65,11 +65,12 @@ class DashboardService {
     }
 
     static async getRecentSales(
+        seasonId: number,
         limit?: number,
         signal?: AbortSignal
     ): Promise<DashboardApiResponse<RecentSalesResponse>> {
         const response = await http.get("/api/dashboard/recent-sales", {
-            params: { limit },
+            params: { seasonId, limit },
             signal,
         });
         return response.data;

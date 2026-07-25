@@ -25,6 +25,10 @@ type RouteConfig struct {
 
 	DashboardController *http.DashboardController
 
+	StockController *http.StockController
+
+	FinancialReportController *http.FinancialReportController
+
 	UserController *http.UserController
 
 	AuthMiddleware fiber.Handler
@@ -100,4 +104,6 @@ func (c *RouteConfig) SetupAuthRoute() {
 	api.Get("/dashboard/harvest-by-type", c.DashboardController.GetHarvestByType)
 	api.Get("/dashboard/bagang-performance", c.DashboardController.GetBagangPerformance)
 	api.Get("/dashboard/recent-sales", c.DashboardController.GetRecentSales)
+	api.Get("/stock/summary", c.StockController.GetSummary)
+	api.Get("/reports/financial", middleware.RequireRole("ADMIN", "OWNER"), c.FinancialReportController.GetReport)
 }

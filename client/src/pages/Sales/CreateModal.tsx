@@ -6,7 +6,6 @@ import useCustomerQuery from "../../features/customer/hooks/useCustomer";
 import useCreateSalesMutation from "../../features/sales/hooks/useCreateSalesMutation";
 import CustomerFormModal from "../Customer/FormModal";
 import useCreateCustomerMutation from "../../features/customer/hooks/useCreateCustomerMutation";
-import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
 
 interface CreateSalesModalProps {
     isOpen: boolean;
@@ -15,13 +14,10 @@ interface CreateSalesModalProps {
 
 const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) => {
     const [selectedCustomer, setSelectedCustomer] = useState("");
-    const [selectedBagang, setSelectedBagang] = useState("");
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
     const { data: customerResponse } = useCustomerQuery();
-    const { data: bagangResponse } = useBagangQuery();
     const customers = customerResponse?.data?.data || [];
-    const bagangs = bagangResponse?.data?.data || [];
 
     const { mutate: createSales, isPending: isCreatingSales } = useCreateSalesMutation();
     const { mutate: createCustomer, isPending: isCreatingCustomer } = useCreateCustomerMutation();
@@ -30,22 +26,16 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
         value: c.name, // We use name as the value for Sales.Customer
         label: c.name,
     }));
-    const bagangOptions = bagangs.map((b) => ({
-        value: b.id,
-        label: b.name,
-    }));
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedCustomer || !selectedBagang) return;
+        if (!selectedCustomer) return;
 
         createSales(
-            { customer: selectedCustomer, bagang_id: selectedBagang },
+            { customer: selectedCustomer },
             {
                 onSuccess: () => {
                     onClose();
                     setSelectedCustomer("");
-                    setSelectedBagang("");
                 },
             },
         );
@@ -99,18 +89,6 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                             </div>
                         </div>
 
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                Bagang
-                            </label>
-                            <Select
-                                options={bagangOptions}
-                                value={selectedBagang}
-                                onChange={setSelectedBagang}
-                                placeholder="Pilih Bagang"
-                            />
-                        </div>
-
                         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-4">
                             <Button
                                 size="sm"
@@ -125,7 +103,7 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                                 size="sm"
                                 variant="primary"
                                 type="submit"
-                                disabled={!selectedCustomer || !selectedBagang || isCreatingSales}
+                                disabled={!selectedCustomer || isCreatingSales}
                                 fullWidth
                             >
                                 {isCreatingSales ? "Menyimpan..." : "Simpan"}

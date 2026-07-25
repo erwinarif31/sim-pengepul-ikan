@@ -23,6 +23,12 @@ export default function RecentSalesTable({ data, isLoading }: RecentSalesTablePr
             columnClassName: "w-1/6",
         },
         {
+            key: "bagang_name",
+            title: "Bagang",
+            hideOnMobile: true,
+            columnClassName: "w-1/6",
+        },
+        {
             key: "total_amount",
             title: "Total",
             render: (row) => `Rp ${row.total_amount.toLocaleString("id-ID")}`,
@@ -37,7 +43,7 @@ export default function RecentSalesTable({ data, isLoading }: RecentSalesTablePr
             key: "remaining",
             title: "Sisa",
             render: (row) => {
-                const remaining = row.total_amount - row.total_paid;
+                const remaining = Math.max(0, row.total_amount - row.total_paid);
                 return (
                     <span className={remaining > 0 ? "text-error-600" : "text-success-600"}>
                         Rp {remaining.toLocaleString("id-ID")}

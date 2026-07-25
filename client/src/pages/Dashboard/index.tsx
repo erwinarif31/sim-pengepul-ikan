@@ -19,7 +19,7 @@ export default function DashboardPage() {
     const [selectedSeasonId, setSelectedSeasonId] = useState<number | undefined>(undefined);
 
     // Fetch seasons
-    const { data: seasonsResponse, isLoading: isSeasonsLoading } = useSeasonQuery();
+    const { data: seasonsResponse, isLoading: isSeasonsLoading, error: seasonsError } = useSeasonQuery();
     const seasons = useMemo(
         () => seasonsResponse?.data?.data ?? [],
         [seasonsResponse],
@@ -50,11 +50,15 @@ export default function DashboardPage() {
     }, [seasons]);
 
     // Dashboard data queries
-    const { data: metricsData, isLoading: isMetricsLoading } = useDashboardMetrics(selectedSeasonId);
-    const { data: trendData, isLoading: isTrendLoading } = useHarvestTrend(selectedSeasonId);
-    const { data: byTypeData, isLoading: isByTypeLoading } = useHarvestByType(selectedSeasonId);
-    const { data: performanceData, isLoading: isPerformanceLoading } = useBagangPerformance(selectedSeasonId, 5);
-    const { data: recentSalesData, isLoading: isRecentSalesLoading } = useRecentSales(5);
+    const { data: metricsData, isLoading: isMetricsLoading, error: metricsError } = useDashboardMetrics(selectedSeasonId);
+    const { data: trendData, isLoading: isTrendLoading, error: trendError } = useHarvestTrend(selectedSeasonId);
+    const { data: byTypeData, isLoading: isByTypeLoading, error: byTypeError } = useHarvestByType(selectedSeasonId);
+    const { data: performanceData, isLoading: isPerformanceLoading, error: performanceError } = useBagangPerformance(selectedSeasonId, 5);
+    const { data: recentSalesData, isLoading: isRecentSalesLoading, error: recentSalesError } = useRecentSales(selectedSeasonId, 5);
+
+    const dashboardError = metricsError || trendError || byTypeError || performanceError || recentSalesError;
+    const seasonLoadFailed = Boolean(seasonsError);
+    const seasonUnavailable = seasonLoadFailed || (!isSeasonsLoading && seasons.length === 0);
 
     const handleSeasonChange = (value: string) => {
         setSelectedSeasonId(parseInt(value, 10));
@@ -88,35 +92,51 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Metrics Cards */}
-                <DashboardMetricsCard
-                    data={metricsData?.data}
-                    isLoading={isMetricsLoading || !selectedSeasonId}
-                />
+                {seasonUnavailable ? (
+                    <div className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400">
+                        {seasonLoadFailed
+                            ? "Gagal memuat daftar musim. Coba muat ulang halaman."
+                            : "Belum ada data musim untuk ditampilkan."}
+                    </div>
+                ) : (
+                    <>
+                        {dashboardError && (
+                            <div className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400">
+                                Gagal memuat sebagian data dashboard. Coba muat ulang halaman.
+                            </div>
+                        )}
 
-                {/* Charts Row 1: Trend + By Type */}
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <HarvestTrendChart
-                        data={trendData?.data?.data}
-                        isLoading={isTrendLoading || !selectedSeasonId}
-                    />
-                    <HarvestByTypeChart
-                        data={byTypeData?.data?.data}
-                        isLoading={isByTypeLoading || !selectedSeasonId}
-                    />
-                </div>
+                        {/* Metrics Cards */}
+                        <DashboardMetricsCard
+                            data={metricsData?.data}
+                            isLoading={isMetricsLoading || (!selectedSeasonId && !seasonUnavailable)}
+                        />
 
-                {/* Charts Row 2: Bagang Performance */}
-                <BagangPerformanceChart
-                    data={performanceData?.data?.data}
-                    isLoading={isPerformanceLoading || !selectedSeasonId}
-                />
+                        {/* Charts Row 1: Trend + By Type */}
+                        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                            <HarvestTrendChart
+                                data={trendData?.data?.data}
+                                isLoading={isTrendLoading || (!selectedSeasonId && !seasonUnavailable)}
+                            />
+                            <HarvestByTypeChart
+                                data={byTypeData?.data?.data}
+                                isLoading={isByTypeLoading || (!selectedSeasonId && !seasonUnavailable)}
+                            />
+                        </div>
 
-                {/* Recent Sales Table */}
-                <RecentSalesTable
-                    data={recentSalesData?.data?.data}
-                    isLoading={isRecentSalesLoading}
-                />
+                        {/* Charts Row 2: Bagang Performance */}
+                        <BagangPerformanceChart
+                            data={performanceData?.data?.data}
+                            isLoading={isPerformanceLoading || (!selectedSeasonId && !seasonUnavailable)}
+                        />
+
+                        {/* Recent Sales Table */}
+                        <RecentSalesTable
+                            data={recentSalesData?.data?.data}
+                            isLoading={isRecentSalesLoading}
+                        />
+                    </>
+                )}
             </div>
         </>
     );
