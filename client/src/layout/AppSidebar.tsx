@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
         path: "/",
     },
     {
-        name: "Pembelian",
+        name: "Hasil Panen",
         icon: <BoxCubeIcon />,
         path: "/pembelian/",
     },
@@ -74,16 +74,6 @@ const masterDataItems: NavItem[] = [
         path: "/musim",
     },
     {
-        name: "Jenis Ikan",
-        icon: <ListIcon />,
-        path: "/jenis-ikan",
-    },
-    {
-        name: "Jenis Pengeluaran",
-        icon: <FileIcon />,
-        path: "/jenis-pengeluaran",
-    },
-    {
         name: "Pekerja",
         icon: <GroupIcon />,
         path: "/pekerja",
@@ -103,6 +93,19 @@ const masterDataItems: NavItem[] = [
     },
 ];
 
+const referenceItems: NavItem[] = [
+    {
+        name: "Jenis Ikan",
+        icon: <ListIcon />,
+        path: "/jenis-ikan",
+    },
+    {
+        name: "Jenis Pengeluaran",
+        icon: <FileIcon />,
+        path: "/jenis-pengeluaran",
+    },
+];
+
 const AppSidebar: React.FC = () => {
     const { isExpanded, isMobileOpen, setIsMobileOpen, isHovered, setIsHovered } = useSidebar();
     const location = useLocation();
@@ -111,7 +114,7 @@ const AppSidebar: React.FC = () => {
 
     const [openSubmenu, setOpenSubmenu] = useState<
         {
-            type: "main" | "master-data";
+            type: "main" | "master-data" | "reference";
             index: number;
         } | null
     >(null);
@@ -135,14 +138,18 @@ const AppSidebar: React.FC = () => {
 
     useEffect(() => {
         let submenuMatched = false;
-        ["main", "support", "others"].forEach((menuType) => {
-            const items = menuType === "main" ? navItems : masterDataItems;
+        ["main", "master-data", "reference"].forEach((menuType) => {
+            const items = menuType === "main"
+                ? navItems
+                : menuType === "master-data"
+                    ? masterDataItems
+                    : referenceItems;
             items.forEach((nav, index) => {
                 if (nav.subItems) {
                     nav.subItems.forEach((subItem) => {
                         if (isActive(subItem.path)) {
                             setOpenSubmenu({
-                                type: menuType as "main" | "master-data",
+                                type: menuType as "main" | "master-data" | "reference",
                                 index,
                             });
                             submenuMatched = true;
@@ -171,7 +178,7 @@ const AppSidebar: React.FC = () => {
 
     const handleSubmenuToggle = (
         index: number,
-        menuType: "main" | "master-data",
+        menuType: "main" | "master-data" | "reference",
     ) => {
         setOpenSubmenu((prevOpenSubmenu) => {
             if (
@@ -187,7 +194,7 @@ const AppSidebar: React.FC = () => {
 
     const renderMenuItems = (
         items: NavItem[],
-        menuType: "main" | "master-data",
+        menuType: "main" | "master-data" | "reference",
     ) => (
         (
             <ul className="flex flex-col gap-4">
@@ -395,6 +402,19 @@ const AppSidebar: React.FC = () => {
                                     : <HorizontaLDots />}
                             </h2>
                             {renderMenuItems(masterDataItems, "master-data")}
+                        </div>
+                        <div className="">
+                            <h2
+                                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                                        ? "lg:justify-center"
+                                        : "justify-start"
+                                    }`}
+                            >
+                                {isExpanded || isHovered || isMobileOpen
+                                    ? "Referensi"
+                                    : <HorizontaLDots />}
+                            </h2>
+                            {renderMenuItems(referenceItems, "reference")}
                         </div>
                     </div>
                 </nav>
