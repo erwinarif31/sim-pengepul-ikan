@@ -333,8 +333,8 @@ func nonNegative(value int) int {
 	return value
 }
 
-func calculateNetProfit(revenue, productionCost int) int {
-	return revenue - productionCost
+func calculateNetProfit(revenue, capital int) int {
+	return revenue - capital
 }
 
 func calculateHarvestValue(price int, weight float64) int {

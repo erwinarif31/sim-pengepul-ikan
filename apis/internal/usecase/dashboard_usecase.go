@@ -95,7 +95,7 @@ func (c *DashboardUseCase) GetMetrics(ctx context.Context, auth *model.Auth, sea
 	}
 	totalSalesRevenue, totalPaid, accountsReceivable := calculateSalesTotalsForScope(sales, scope)
 
-	netProfit := calculateNetProfit(totalSalesRevenue, totalCosts)
+	netProfit := calculateNetProfit(totalSalesRevenue, totalHarvestValue)
 	profitMargin := calculateProfitMargin(totalSalesRevenue, netProfit)
 	activeBagangCount := len(activeBagangs)
 	avgProfitPerBagang := 0
@@ -267,7 +267,7 @@ func (c *DashboardUseCase) GetBagangPerformance(ctx context.Context, auth *model
 			HarvestValue:   value.harvestValue,
 			SalesRevenue:   value.salesRevenue,
 			ProductionCost: value.productionCost,
-			NetProfit:      value.salesRevenue - value.productionCost,
+			NetProfit:      value.salesRevenue - value.harvestValue,
 		})
 	}
 	sort.Slice(data, func(i, j int) bool {
@@ -315,6 +315,10 @@ func (c *DashboardUseCase) GetRecentSales(ctx context.Context, auth *model.Auth,
 	data := make([]model.RecentSaleItem, len(sales))
 	for i, sale := range sales {
 		totalAmount, totalPaid := calculateSaleTotalsForScope(sale, scope)
+		isPaidOff := sale.IsPaidOff
+		if scope.filtered {
+			isPaidOff = totalAmount > 0 && totalPaid >= totalAmount
+		}
 		data[i] = model.RecentSaleItem{
 			ID:          sale.ID,
 			Customer:    sale.Customer,
@@ -322,7 +326,7 @@ func (c *DashboardUseCase) GetRecentSales(ctx context.Context, auth *model.Auth,
 			IssuedAt:    sale.IssuedAt.Format("2006-01-02"),
 			TotalAmount: totalAmount,
 			TotalPaid:   totalPaid,
-			IsPaidOff:   sale.IsPaidOff,
+			IsPaidOff:   isPaidOff,
 		}
 	}
 	return &model.RecentSalesResponse{Data: data}, nil

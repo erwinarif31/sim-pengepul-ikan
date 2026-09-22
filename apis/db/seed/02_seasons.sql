@@ -1,12 +1,12 @@
 -- Catchery Seasons Seed
--- Seeds 1 active season (current)
+-- Seeds 1 active season started three months ago
 -- Run after 01_reference_data.sql
 
 BEGIN;
 
--- 1 Active Season (started 4 months ago, still ongoing)
+-- 1 Active Season (started three months ago, still ongoing)
 INSERT INTO seasons (start_date, end_date) VALUES 
-    ('2025-09-15', NULL);           -- Active season - Sep 2025 to present
+    (CURRENT_DATE - INTERVAL '3 months', NULL); -- Active season
 
 COMMIT;
 

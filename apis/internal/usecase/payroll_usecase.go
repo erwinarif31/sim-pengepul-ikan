@@ -45,7 +45,84 @@ func NewPayrollUseCase(
 	}
 }
 
-func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, auth *model.Auth, workerID string, bagangID string) ([]byte, string, error) {
+func (c *PayrollUseCase) Search(ctx context.Context, auth *model.Auth) ([]model.PayrollRowResponse, error) {
+	if !bagangRoleIsValid(auth) {
+		return nil, fiber.ErrUnauthorized
+	}
+	if auth.Role != "ADMIN" && auth.WorkerID == nil {
+		return nil, fiber.ErrForbidden
+	}
+
+	tx := c.DB.WithContext(ctx).Preload("Worker").Preload("Owner")
+	bagangQuery := tx.Model(&entity.Bagang{}).Order("name ASC")
+	switch auth.Role {
+	case "OWNER":
+		bagangQuery = bagangQuery.Where("owner_id = ? OR worker_id = ?", *auth.WorkerID, *auth.WorkerID)
+	case "WORKER":
+		bagangQuery = bagangQuery.Where("worker_id = ?", *auth.WorkerID)
+	}
+
+	var bagangs []entity.Bagang
+	if err := bagangQuery.Find(&bagangs).Error; err != nil {
+		c.Log.WithError(err).Error("error searching payroll bagangs")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	var seasons []entity.Season
+	if err := c.DB.WithContext(ctx).Order("start_date DESC, id DESC").Find(&seasons).Error; err != nil {
+		c.Log.WithError(err).Error("error searching payroll seasons")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	rows := make([]model.PayrollRowResponse, 0, len(bagangs)*len(seasons)*2)
+	for _, bagang := range bagangs {
+		participants := make([]*entity.Worker, 0, 2)
+		addParticipant := func(worker *entity.Worker) {
+			if worker == nil {
+				return
+			}
+			for _, participant := range participants {
+				if participant.ID == worker.ID {
+					return
+				}
+			}
+			participants = append(participants, worker)
+		}
+
+		switch auth.Role {
+		case "ADMIN":
+			addParticipant(bagang.Worker)
+			addParticipant(bagang.Owner)
+		case "OWNER":
+			if bagang.OwnerID == *auth.WorkerID {
+				addParticipant(bagang.Worker)
+				addParticipant(bagang.Owner)
+			} else {
+				addParticipant(bagang.Worker)
+			}
+		case "WORKER":
+			addParticipant(bagang.Worker)
+		}
+
+		for _, participant := range participants {
+			for _, season := range seasons {
+				rows = append(rows, model.PayrollRowResponse{
+					WorkerID:        participant.ID,
+					WorkerName:      participant.Name,
+					BagangID:        bagang.ID,
+					BagangName:      bagang.Name,
+					SeasonID:        season.ID,
+					SeasonStartDate: season.StartDate,
+					SeasonEndDate:   season.EndDate,
+				})
+			}
+		}
+	}
+
+	return rows, nil
+}
+
+func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, auth *model.Auth, workerID string, bagangID string, seasonID string) ([]byte, string, error) {
 	tx := c.DB.WithContext(ctx)
 	if auth == nil {
 		return nil, "", fiber.ErrUnauthorized
@@ -65,20 +142,28 @@ func (c *PayrollUseCase) GeneratePayrollPDF(ctx context.Context, auth *model.Aut
 		return nil, "", fiber.ErrNotFound
 	}
 
-	// 2. Get Active Season
+	// 2. Get Requested Season
 	var activeSeason entity.Season
-	if err := tx.Where("end_date IS NULL").First(&activeSeason).Error; err != nil {
-		return nil, "", fiber.NewError(fiber.StatusBadRequest, "No active season found")
+	seasonQuery := tx
+	if seasonID == "" {
+		seasonQuery = seasonQuery.Where("end_date IS NULL")
+	} else {
+		seasonQuery = seasonQuery.Where("id = ?", seasonID)
+	}
+	if err := seasonQuery.First(&activeSeason).Error; err != nil {
+		return nil, "", fiber.NewError(fiber.StatusBadRequest, "Season not found")
 	}
 
 	// 3. Get Associated Bagangs
 	var bagangs []entity.Bagang
 	bagangQuery := tx.Where("worker_id = ? OR owner_id = ?", workerID, workerID)
-	if auth.Role == "OWNER" {
+	if auth.Role == "WORKER" {
+		bagangQuery = tx.Where("worker_id = ?", workerID)
+	} else if auth.Role == "OWNER" {
 		if auth.WorkerID == nil {
 			return nil, "", fiber.ErrForbidden
 		}
-		bagangQuery = tx.Where("owner_id = ? AND (worker_id = ? OR owner_id = ?)", *auth.WorkerID, workerID, workerID)
+		bagangQuery = tx.Where("(owner_id = ? AND (worker_id = ? OR owner_id = ?)) OR (worker_id = ? AND worker_id = ?)", *auth.WorkerID, workerID, workerID, *auth.WorkerID, workerID)
 	}
 	if bagangID != "" {
 		bagangQuery = bagangQuery.Where("id = ?", bagangID)

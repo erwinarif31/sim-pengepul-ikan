@@ -42,6 +42,13 @@ func NewProductionCostUseCase(
 }
 
 func (c *ProductionCostUseCase) Create(ctx context.Context, auth *model.Auth, request *model.CreateProductionCostRequest) (*model.ProductionCostResponse, error) {
+	if auth == nil {
+		return nil, fiber.ErrUnauthorized
+	}
+	if auth.Role == "WORKER" {
+		return nil, fiber.ErrForbidden
+	}
+
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -129,6 +136,9 @@ func (c *ProductionCostUseCase) Update(ctx context.Context, auth *model.Auth, id
 	if !bagangInScope(auth, bagang) {
 		return nil, fiber.ErrForbidden
 	}
+	if err := authorizeProductionCostMutation(auth, entity); err != nil {
+		return nil, err
+	}
 
 	if request.ProductionCostType != "" {
 		entity.ProductionCostType = request.ProductionCostType
@@ -177,6 +187,9 @@ func (c *ProductionCostUseCase) Delete(ctx context.Context, auth *model.Auth, id
 	if !bagangInScope(auth, bagang) {
 		return fiber.ErrForbidden
 	}
+	if err := authorizeProductionCostMutation(auth, entity); err != nil {
+		return err
+	}
 
 	if err := c.ProductionCostRepository.Delete(tx, entity); err != nil {
 		c.Log.WithError(err).Error("error deleting production cost")
@@ -220,6 +233,25 @@ func (c *ProductionCostUseCase) findBagangWithPeople(db *gorm.DB, bagangID strin
 		return nil, fiber.ErrNotFound
 	}
 	return bagang, nil
+}
+
+func authorizeProductionCostMutation(auth *model.Auth, cost *entity.ProductionCost) error {
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+	if auth.Role == "ADMIN" {
+		return nil
+	}
+	if auth.Role == "WORKER" {
+		return fiber.ErrForbidden
+	}
+	if auth.WorkerID == nil || cost.CreatedBy == nil || *auth.WorkerID != *cost.CreatedBy {
+		return fiber.ErrForbidden
+	}
+	if auth.Role == "OWNER" && (cost.CreatorRole == "owner" || cost.CreatorRole == "both") {
+		return nil
+	}
+	return fiber.ErrForbidden
 }
 
 func resolveProductionCostCreator(bagang *entity.Bagang, role string) (*string, *string, error) {

@@ -43,6 +43,10 @@ func NewHarvestUseCase(
 }
 
 func (c *HarvestUseCase) Create(ctx context.Context, auth *model.Auth, request *model.CreateHarvestRequest) (*model.HarvestResponse, error) {
+	if err := authorizeHarvestMutation(auth); err != nil {
+		return nil, err
+	}
+
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -109,6 +113,10 @@ func (c *HarvestUseCase) Create(ctx context.Context, auth *model.Auth, request *
 }
 
 func (c *HarvestUseCase) Update(ctx context.Context, auth *model.Auth, id string, request *model.UpdateHarvestRequest) (*model.HarvestResponse, error) {
+	if err := authorizeHarvestMutation(auth); err != nil {
+		return nil, err
+	}
+
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -169,6 +177,10 @@ func (c *HarvestUseCase) Update(ctx context.Context, auth *model.Auth, id string
 }
 
 func (c *HarvestUseCase) Delete(ctx context.Context, auth *model.Auth, id string) error {
+	if err := authorizeHarvestMutation(auth); err != nil {
+		return err
+	}
+
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -222,6 +234,19 @@ func (c *HarvestUseCase) SearchByBagangId(ctx context.Context, auth *model.Auth,
 		responses[i] = *converter.HarvestToResponse(&harvest)
 	}
 	return responses, nil
+}
+
+func authorizeHarvestMutation(auth *model.Auth) error {
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+	if auth.Role == "ADMIN" || auth.Role == "OWNER" {
+		return nil
+	}
+	if auth.Role == "WORKER" {
+		return fiber.ErrForbidden
+	}
+	return fiber.ErrUnauthorized
 }
 
 func (c *HarvestUseCase) resolveHarvestCreator(auth *model.Auth, bagang *entity.Bagang, createdBy string) (*string, *string, error) {

@@ -22,6 +22,7 @@ type FinancialProductionCostItem struct {
 }
 
 type FinancialReportResponse struct {
+	TotalHarvestValue   int                           `json:"total_harvest_value"`
 	TotalSalesRevenue   int                           `json:"total_sales_revenue"`
 	TotalPaid           int                           `json:"total_paid"`
 	AccountsReceivable  int                           `json:"accounts_receivable"`

@@ -51,20 +51,30 @@ func (c *SalesUseCase) Search(ctx context.Context, auth *model.Auth, request *mo
 	if err != nil {
 		return nil, err
 	}
-	tx = preloadSalesDetails(tx, scope)
-	if auth.Role == "ADMIN" {
-		tx = tx.Preload("TransactionDetails")
-	}
+	tx = applySalesDetailScope(
+		preloadSalesDetails(tx, reportBagangScope{}).Preload("TransactionDetails"),
+		scope,
+	)
 
-	sales, err := c.SalesRepository.Search(tx, request)
+	searchRequest := request
+	if scope.filtered && request.IsPaidOff != nil {
+		scopedRequest := *request
+		scopedRequest.IsPaidOff = nil
+		searchRequest = &scopedRequest
+	}
+	sales, err := c.SalesRepository.Search(tx, searchRequest)
 	if err != nil {
 		c.Log.WithError(err).Error("error searching sales")
 		return nil, fiber.ErrInternalServerError
 	}
 
-	responses := make([]model.SalesResponse, len(sales))
-	for i, sale := range sales {
-		responses[i] = *c.salesResponse(&sale, auth, scope)
+	responses := make([]model.SalesResponse, 0, len(sales))
+	for i := range sales {
+		response := c.salesResponse(&sales[i], auth, scope)
+		if request.IsPaidOff != nil && response.IsPaidOff != *request.IsPaidOff {
+			continue
+		}
+		responses = append(responses, *response)
 	}
 
 	return responses, nil
@@ -76,10 +86,10 @@ func (c *SalesUseCase) FindById(ctx context.Context, auth *model.Auth, id int) (
 	if err != nil {
 		return nil, err
 	}
-	tx = preloadSalesDetails(tx, scope)
-	if auth.Role == "ADMIN" {
-		tx = tx.Preload("TransactionDetails")
-	}
+	tx = applySalesDetailScope(
+		preloadSalesDetails(tx, reportBagangScope{}).Preload("TransactionDetails"),
+		scope,
+	)
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, id); err != nil {
 		return nil, fiber.ErrNotFound
@@ -93,6 +103,9 @@ func (c *SalesUseCase) Create(ctx context.Context, auth *model.Auth, request *mo
 
 	if err := authorizeSalesMutation(auth); err != nil {
 		return nil, err
+	}
+	if auth.Role != "ADMIN" {
+		return nil, fiber.ErrForbidden
 	}
 	if err := c.Validate.Struct(request); err != nil {
 		c.Log.WithError(err).Error("error validating request body")
@@ -132,9 +145,13 @@ func (c *SalesUseCase) AddSalesItem(ctx context.Context, auth *model.Auth, sales
 		return nil, err
 	}
 
-	// Verify Sale exists
+	// Verify Sale exists and is visible to the caller.
+	scope, err := c.resolveSalesScope(tx, auth)
+	if err != nil {
+		return nil, err
+	}
 	sales := new(entity.Sales)
-	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
+	if err := c.SalesRepository.FindById(applySalesDetailScope(tx, scope), sales, salesId); err != nil {
 		return nil, fiber.ErrNotFound
 	}
 	if err := c.authorizeSalesDetailBagang(tx, auth, &request.BagangID); err != nil {
@@ -190,6 +207,9 @@ func (c *SalesUseCase) AddPayment(ctx context.Context, auth *model.Auth, salesId
 	sales := new(entity.Sales)
 	if err := c.SalesRepository.FindById(tx, sales, salesId); err != nil {
 		return nil, fiber.ErrNotFound
+	}
+	if err := c.authorizePaymentSale(tx, auth, salesId); err != nil {
+		return nil, err
 	}
 	if err := c.validatePaymentAmount(tx, salesId, request.Amount, 0); err != nil {
 		return nil, err
@@ -334,6 +354,9 @@ func (c *SalesUseCase) UpdatePayment(ctx context.Context, auth *model.Auth, paym
 	if err := c.TransactionDetailRepository.FindById(tx, payment, paymentId); err != nil {
 		return nil, fiber.ErrNotFound
 	}
+	if err := c.authorizePaymentSale(tx, auth, payment.SalesID); err != nil {
+		return nil, err
+	}
 	if err := c.validatePaymentAmount(tx, payment.SalesID, request.Amount, paymentId); err != nil {
 		return nil, err
 	}
@@ -370,6 +393,9 @@ func (c *SalesUseCase) DeletePayment(ctx context.Context, auth *model.Auth, paym
 	}
 
 	salesId := payment.SalesID
+	if err := c.authorizePaymentSale(tx, auth, salesId); err != nil {
+		return nil, err
+	}
 	if err := c.TransactionDetailRepository.Delete(tx, payment); err != nil {
 		c.Log.WithError(err).Error("error deleting payment")
 		return nil, fiber.ErrInternalServerError
@@ -462,23 +488,57 @@ func (c *SalesUseCase) salesResponse(sales *entity.Sales, auth *model.Auth, scop
 	response := converter.SalesToResponse(sales)
 	if scope.filtered {
 		visibleDetails := response.SalesDetails[:0]
-		response.TotalAmount = 0
 		for _, detail := range response.SalesDetails {
 			if detail.BagangID == nil || !bagangIDInScope(*detail.BagangID, scope) {
 				continue
 			}
 			visibleDetails = append(visibleDetails, detail)
-			response.TotalAmount += detail.Subtotal
 		}
 		response.SalesDetails = visibleDetails
-	}
-	if auth.Role != "ADMIN" {
+		response.TotalAmount, response.TotalPaid = calculateSaleTotalsForScope(*sales, scope)
+		response.IsPaidOff = response.TotalAmount > 0 && response.TotalPaid >= response.TotalAmount
+		response.PaymentsVisible = true
+		response.PaidOffAt = nil
+		response.TransactionDetails = nil
+	} else if auth.Role != "ADMIN" {
 		response.PaymentsVisible = false
 		response.PaidOffAt = nil
 		response.TransactionDetails = nil
 		response.TotalPaid = 0
 	}
 	return response
+}
+
+func (c *SalesUseCase) authorizePaymentSale(db *gorm.DB, auth *model.Auth, salesID int) error {
+	if auth == nil {
+		return fiber.ErrUnauthorized
+	}
+	if auth.Role == "ADMIN" {
+		return nil
+	}
+	if auth.Role != "OWNER" {
+		return fiber.ErrForbidden
+	}
+
+	scope, err := c.resolveSalesScope(db, auth)
+	if err != nil {
+		return err
+	}
+	if len(scope.IDs) == 0 {
+		return fiber.ErrForbidden
+	}
+
+	var ownedDetails int64
+	if err := db.Model(&entity.SalesDetail{}).
+		Where("sales_id = ? AND bagang_id IN ?", salesID, scope.IDs).
+		Count(&ownedDetails).Error; err != nil {
+		c.Log.WithError(err).Error("error checking payment bagang scope")
+		return fiber.ErrInternalServerError
+	}
+	if ownedDetails == 0 {
+		return fiber.ErrForbidden
+	}
+	return nil
 }
 
 func (c *SalesUseCase) authorizeSalesDetailBagang(db *gorm.DB, auth *model.Auth, bagangID *string) error {
@@ -560,7 +620,7 @@ func authorizePaymentMutation(auth *model.Auth) error {
 	if auth == nil {
 		return fiber.ErrUnauthorized
 	}
-	if auth.Role != "ADMIN" {
+	if auth.Role != "ADMIN" && auth.Role != "OWNER" {
 		return fiber.ErrForbidden
 	}
 	return nil

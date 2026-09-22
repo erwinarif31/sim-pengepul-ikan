@@ -28,13 +28,15 @@ var harvestTypes = []string{"Kecil", "Menengah", "Besar"}
 // Creator roles for production costs
 var creatorRoles = []string{"worker", "owner", "both"}
 
-// Season config (single active season)
+// Season config (single active season, started three months ago)
 const seasonID = 1
 
-var seasonStart = time.Date(2025, 9, 15, 0, 0, 0, 0, time.Local)
-var seasonEnd = time.Date(2026, 1, 15, 0, 0, 0, 0, time.Local) // "now" for random date generation
+var seasonEnd = startOfDay(time.Now()).AddDate(0, 0, 1) // exclusive upper bound
+var seasonStart = seasonEnd.AddDate(0, -3, 0)
 
 func main() {
+	rand.Seed(42)
+
 	// Initialize config
 	viperConfig := config.NewViper()
 	logger := config.NewLogger(viperConfig)
@@ -230,7 +232,11 @@ func seedHarvests(db *gorm.DB, bagangs []BagangInfo) int {
 
 	for _, bagang := range bagangs {
 		for i := 0; i < harvestsPerBagang; i++ {
-			harvestType := harvestTypes[rand.Intn(len(harvestTypes))]
+			// Keep every fish type visible in each Bagang's presentation data.
+			harvestType := harvestTypes[i%len(harvestTypes)]
+			if i >= len(harvestTypes) {
+				harvestType = harvestTypes[rand.Intn(len(harvestTypes))]
+			}
 
 			// Price based on harvest type
 			var price int
@@ -382,7 +388,7 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 		var paidOffAt *time.Time
 
 		if isPaidOff {
-			paidDate := saleDate.AddDate(0, 0, rand.Intn(30)+1)
+			paidDate := paymentDate(saleDate, rand.Intn(30)+1)
 			paidOffAt = &paidDate
 		}
 
@@ -480,12 +486,12 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 		} else if rand.Float32() < 0.5 {
 			// Partial payment (50% chance for unpaid sales)
 			partialAmount := totalSaleAmount * (30 + rand.Intn(40)) / 100 // 30-70% payment
-			paymentDate := saleDate.AddDate(0, 0, rand.Intn(14)+1)
+			paidDate := paymentDate(saleDate, rand.Intn(14)+1)
 
 			transaction := entity.TransactionDetail{
 				SalesID: sale.ID,
 				Amount:  partialAmount,
-				PaidAt:  paymentDate,
+				PaidAt:  paidDate,
 			}
 			db.Create(&transaction)
 		}
@@ -494,6 +500,19 @@ func seedSales(db *gorm.DB, bagangs []BagangInfo) int {
 	}
 
 	return count
+}
+
+func startOfDay(value time.Time) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, value.Location())
+}
+
+func paymentDate(saleDate time.Time, days int) time.Time {
+	paidDate := saleDate.AddDate(0, 0, days)
+	latestDate := seasonEnd.AddDate(0, 0, -1)
+	if paidDate.After(latestDate) {
+		return latestDate
+	}
+	return paidDate
 }
 
 func loadSaleStock(db *gorm.DB) (map[string]map[string]float64, error) {

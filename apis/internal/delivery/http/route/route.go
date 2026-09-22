@@ -98,6 +98,7 @@ func (c *RouteConfig) SetupAuthRoute() {
 	api.Get("/customers/:id", c.CustomerController.FindById)
 	api.Get("/customers", c.CustomerController.Search)
 
+	api.Get("/payroll", c.PayrollController.Search)
 	api.Get("/payroll/:workerId", c.PayrollController.GeneratePDF)
 	api.Get("/dashboard/metrics", c.DashboardController.GetMetrics)
 	api.Get("/dashboard/harvest-trend", c.DashboardController.GetHarvestTrend)

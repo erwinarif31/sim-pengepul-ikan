@@ -54,6 +54,14 @@ func (c *FinancialReportUseCase) Generate(
 		return nil, err
 	}
 
+	var harvests []entity.Harvest
+	harvestQuery := dateRange.apply(tx.Where("harvests_season = ?", seasonID), "harvest_date")
+	harvestQuery = scope.apply(harvestQuery, "bagang_id")
+	if err := harvestQuery.Find(&harvests).Error; err != nil {
+		c.Log.WithError(err).Error("error fetching harvests for financial report")
+		return nil, fiber.ErrInternalServerError
+	}
+
 	var sales []entity.Sales
 	salesQuery := dateRange.apply(preloadSalesDetails(tx, reportBagangScope{}).Preload("TransactionDetails"), "issued_at")
 	salesQuery = applySalesDetailScope(salesQuery, scope)
@@ -73,6 +81,9 @@ func (c *FinancialReportUseCase) Generate(
 	response := &model.FinancialReportResponse{
 		Sales:           make([]model.FinancialSaleItem, 0, len(sales)),
 		ProductionCosts: make([]model.FinancialProductionCostItem, 0, len(costs)),
+	}
+	for _, harvest := range harvests {
+		response.TotalHarvestValue += calculateHarvestValue(harvest.Price, harvest.Weight)
 	}
 	response.TotalSalesRevenue, response.TotalPaid, response.AccountsReceivable = calculateSalesTotalsForScope(sales, scope)
 	for _, sale := range sales {
@@ -99,7 +110,7 @@ func (c *FinancialReportUseCase) Generate(
 		})
 	}
 
-	response.NetProfit = calculateNetProfit(response.TotalSalesRevenue, response.TotalProductionCost)
+	response.NetProfit = calculateNetProfit(response.TotalSalesRevenue, response.TotalHarvestValue)
 	response.ProfitMargin = calculateProfitMargin(response.TotalSalesRevenue, response.NetProfit)
 	return response, nil
 }

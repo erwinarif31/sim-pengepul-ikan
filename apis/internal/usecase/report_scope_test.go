@@ -111,7 +111,7 @@ func TestFinancialCalculations(t *testing.T) {
 		t.Fatalf("sales totals = (%d, %d, %d), want (400, 250, 200)", totalRevenue, totalPaid, totalReceivable)
 	}
 	if calculateNetProfit(1000, 250) != 750 {
-		t.Fatal("net profit must subtract production cost")
+		t.Fatal("net profit must subtract total capital")
 	}
 	if calculateProfitMargin(0, 100) != 0 {
 		t.Fatal("zero revenue margin must be zero")
@@ -151,6 +151,86 @@ func TestSaleTotalsAllocateSharedSaleByBagang(t *testing.T) {
 	_, secondPaid := calculateSaleTotalsForScope(roundingSale, secondScope)
 	if firstPaid+secondPaid != 1 || firstPaid != 1 || secondPaid != 0 {
 		t.Fatalf("rounded scoped payments = (%d, %d), want (1, 0)", firstPaid, secondPaid)
+	}
+}
+
+func TestSalesResponseScopesPaymentsAndDetails(t *testing.T) {
+	paidAt := time.Now()
+	sale := entity.Sales{
+		IsPaidOff: true,
+		PaidOffAt: &paidAt,
+		SalesDetails: []entity.SalesDetail{
+			{BagangID: stringPtrForTest("bagang-1"), Weight: 1, Price: 100},
+			{BagangID: stringPtrForTest("bagang-2"), Weight: 3, Price: 100},
+		},
+		TransactionDetails: []entity.TransactionDetail{{Amount: 200}},
+	}
+
+	scope := reportBagangScope{IDs: []string{"bagang-1"}, filtered: true}
+	response := (&SalesUseCase{}).salesResponse(&sale, &model.Auth{Role: "OWNER"}, scope)
+	if len(response.SalesDetails) != 1 || response.TotalAmount != 100 {
+		t.Fatalf("scoped details = %d and total = %d, want 1 and 100", len(response.SalesDetails), response.TotalAmount)
+	}
+	if !response.PaymentsVisible || response.TotalPaid != 50 {
+		t.Fatalf("scoped payment visibility = %v and total = %d, want true and 50", response.PaymentsVisible, response.TotalPaid)
+	}
+	if len(response.TransactionDetails) != 0 || response.PaidOffAt != nil || response.IsPaidOff {
+		t.Fatal("scoped response must hide global payment rows/date and use scoped paid status")
+	}
+
+	adminResponse := (&SalesUseCase{}).salesResponse(&sale, &model.Auth{Role: "ADMIN"}, reportBagangScope{})
+	if len(adminResponse.SalesDetails) != 2 || len(adminResponse.TransactionDetails) != 1 || adminResponse.TotalAmount != 400 || adminResponse.TotalPaid != 200 {
+		t.Fatalf("admin response = %+v, want all sale and payment data", adminResponse)
+	}
+}
+
+func TestAuthorizeProductionCostMutation(t *testing.T) {
+	personID := "person-1"
+	otherID := "person-2"
+	tests := []struct {
+		name    string
+		auth    *model.Auth
+		role    string
+		creator *string
+		allowed bool
+	}{
+		{name: "admin", auth: &model.Auth{Role: "ADMIN"}, role: "worker", allowed: true},
+		{name: "owner own", auth: &model.Auth{Role: "OWNER", WorkerID: &personID}, role: "owner", creator: &personID, allowed: true},
+		{name: "owner shared", auth: &model.Auth{Role: "OWNER", WorkerID: &personID}, role: "both", creator: &personID, allowed: true},
+		{name: "owner worker cost", auth: &model.Auth{Role: "OWNER", WorkerID: &personID}, role: "worker", creator: &personID},
+		{name: "worker own", auth: &model.Auth{Role: "WORKER", WorkerID: &personID}, role: "worker", creator: &personID},
+		{name: "worker owner cost", auth: &model.Auth{Role: "WORKER", WorkerID: &personID}, role: "owner", creator: &personID},
+		{name: "worker shared cost", auth: &model.Auth{Role: "WORKER", WorkerID: &personID}, role: "both", creator: &personID},
+		{name: "wrong creator", auth: &model.Auth{Role: "OWNER", WorkerID: &personID}, role: "owner", creator: &otherID},
+		{name: "missing auth", role: "owner", creator: &personID},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := authorizeProductionCostMutation(tt.auth, &entity.ProductionCost{CreatorRole: tt.role, CreatedBy: tt.creator})
+			if (err == nil) != tt.allowed {
+				t.Fatalf("allowed = %v, want %v (err: %v)", err == nil, tt.allowed, err)
+			}
+		})
+	}
+}
+
+func TestAuthorizeHarvestMutation(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		auth    *model.Auth
+		allowed bool
+	}{
+		{name: "admin", auth: &model.Auth{Role: "ADMIN"}, allowed: true},
+		{name: "owner", auth: &model.Auth{Role: "OWNER", WorkerID: stringPtrForTest("owner-1")}, allowed: true},
+		{name: "worker", auth: &model.Auth{Role: "WORKER", WorkerID: stringPtrForTest("worker-1")}, allowed: false},
+		{name: "missing auth", allowed: false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			err := authorizeHarvestMutation(tt.auth)
+			if (err == nil) != tt.allowed {
+				t.Fatalf("allowed = %v, want %v (err: %v)", err == nil, tt.allowed, err)
+			}
+		})
 	}
 }
 
