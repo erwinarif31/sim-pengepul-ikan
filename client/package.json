@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "e2e:reset": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e node scripts/reset-e2e-db.mjs",
+    "e2e": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e playwright test",
+    "e2e:headed": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e playwright test --headed",
+    "e2e:slow": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e PW_SLOW_MO=500 playwright test --headed",
+    "e2e:debug": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e playwright test --debug",
+    "e2e:record": "CATCHERY_E2E_RESET=YES CATCHERY_E2E_DB=catchery_e2e PW_VIDEO=on playwright test --headed"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -43,6 +49,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
