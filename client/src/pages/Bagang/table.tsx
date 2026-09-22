@@ -15,7 +15,7 @@ const BagangTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBagang, setEditingBagang] = useState<BagangProps | null>(null);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
     const [search, setSearch] = useState("");
     const { user } = useAuth();
     const canManage = user?.role === "ADMIN" || user?.role === "OWNER";
@@ -121,12 +121,14 @@ const BagangTable = () => {
                 <div className="flex justify-center gap-2">
                     <button
                         onClick={() => openEditModal(row)}
+                        aria-label={`Edit Bagang ${row.name}`}
                         className="text-blue-500 hover:text-blue-700"
                     >
                         <PencilIcon className="size-5" />
                     </button>
                     <button
                         onClick={() => handleDelete(row.id, row.name)}
+                        aria-label={`Hapus Bagang ${row.name}`}
                         className="text-red-500 hover:text-red-700"
                     >
                         <TrashBinIcon className="size-5" />

@@ -4,7 +4,7 @@ import createSchema from "../../../utils/createSchema";
 const SeasonSchema = z.object({
     id: z.number(),
     start_date: z.string(),
-    end_date: z.string(),
+    end_date: z.string().nullable(),
 });
 
 const SeasonListSchema = SeasonSchema.array();

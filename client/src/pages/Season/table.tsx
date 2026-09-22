@@ -40,7 +40,7 @@ const columns: TableHeader[] = [
 
 const SeasonTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
     const [search, setSearch] = useState("");
     const { user } = useAuth();
     const canEndSeason = user?.role === "ADMIN";

@@ -53,8 +53,8 @@ export default function DashboardPage() {
     const { data: metricsData, isLoading: isMetricsLoading, error: metricsError } = useDashboardMetrics(selectedSeasonId);
     const { data: trendData, isLoading: isTrendLoading, error: trendError } = useHarvestTrend(selectedSeasonId);
     const { data: byTypeData, isLoading: isByTypeLoading, error: byTypeError } = useHarvestByType(selectedSeasonId);
-    const { data: performanceData, isLoading: isPerformanceLoading, error: performanceError } = useBagangPerformance(selectedSeasonId, 5);
-    const { data: recentSalesData, isLoading: isRecentSalesLoading, error: recentSalesError } = useRecentSales(selectedSeasonId, 5);
+    const { data: performanceData, isLoading: isPerformanceLoading, error: performanceError } = useBagangPerformance(selectedSeasonId, 50);
+    const { data: recentSalesData, isLoading: isRecentSalesLoading, error: recentSalesError } = useRecentSales(selectedSeasonId, 50);
 
     const dashboardError = metricsError || trendError || byTypeError || performanceError || recentSalesError;
     const seasonLoadFailed = Boolean(seasonsError);

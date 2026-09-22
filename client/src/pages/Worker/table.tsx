@@ -15,7 +15,7 @@ const WorkerTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingWorker, setEditingWorker] = useState<WorkerProps | null>(null);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
     const [search, setSearch] = useState("");
 
     const { data: response, isLoading, error } = useWorkerQuery();
@@ -87,18 +87,21 @@ const WorkerTable = () => {
                 <div className="flex justify-center gap-2">
                     <Link
                         to={`/pekerja/${row.id}`}
+                        aria-label={`Lihat pekerja ${row.name}`}
                         className="text-gray-500 hover:text-gray-700"
                     >
                         <EyeIcon className="size-5" />
                     </Link>
                     <button
                         onClick={() => openEditModal(row)}
+                        aria-label={`Edit pekerja ${row.name}`}
                         className="text-blue-500 hover:text-blue-700"
                     >
                         <PencilIcon className="size-5" />
                     </button>
                     <button
                         onClick={() => handleDelete(row.id, row.name)}
+                        aria-label={`Hapus pekerja ${row.name}`}
                         className="text-red-500 hover:text-red-700"
                     >
                         <TrashBinIcon className="size-5" />

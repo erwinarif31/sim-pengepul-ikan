@@ -1,136 +1,130 @@
 import { useState } from "react";
 import BasicTableData from "../../component/table/BasicTableData";
 import type { TableHeader } from "../../component/table/types";
-import useWorkerQuery from "../../features/worker/hooks/useWorker";
 import useGeneratePayrollPDF from "../../features/payroll/hooks/useGeneratePayrollPDF";
+import usePayrollQuery from "../../features/payroll/hooks/usePayrollQuery";
+import type { PayrollRow } from "../../features/payroll/api/payroll.type";
 import { DownloadIcon } from "../../icons";
-import useBagangQuery from "../../features/bagang/hooks/useBagangQuery";
 import Select from "../../component/form/Select";
-import { useAuth } from "../../context/AuthContext";
+
+const formatSeason = (row: PayrollRow) =>
+    `${row.season_start_date.slice(0, 10)}${row.season_end_date ? ` - ${row.season_end_date.slice(0, 10)}` : " (Aktif)"}`;
 
 const PayrollTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
-    const [search, setSearch] = useState("");
-    const [selectedBagangs, setSelectedBagangs] = useState<Record<string, string>>({});
-    const { user } = useAuth();
-
-    const { data: workerResponse, isLoading: isLoadingWorkers, error: workerError } = useWorkerQuery();
-    const { data: bagangResponse, isLoading: isLoadingBagangs } = useBagangQuery();
+    const [nameFilter, setNameFilter] = useState("all");
+    const [bagangFilter, setBagangFilter] = useState("all");
+    const [seasonFilter, setSeasonFilter] = useState("all");
+    const { data: payrollResponse, isLoading, error } = usePayrollQuery();
     const { mutate: generatePDF, isPending: isGenerating } = useGeneratePayrollPDF();
 
-    const workers = workerResponse?.data?.data || [];
-    const allBagangs = bagangResponse?.data?.data || [];
-    const allowedWorkerIDs = new Set(
-        user?.role === "ADMIN"
-            ? workers.map((worker) => worker.id)
-            : user?.role === "WORKER" && user.worker_id
-                ? [user.worker_id]
-                : allBagangs.flatMap((bagang) => [bagang.worker_id, bagang.owner_id]),
-    );
+    const rows = payrollResponse?.data?.data || [];
+    const names = [...new Set(rows.map((row) => row.worker_name))].sort();
+    const bagangs = [...new Map(rows.map((row) => [row.bagang_id, row.bagang_name])).entries()]
+        .sort(([, nameA], [, nameB]) => nameA.localeCompare(nameB));
+    const seasons = [...new Map(rows.map((row) => [row.season_id, formatSeason(row)])).entries()]
+        .sort(([idA], [idB]) => idB - idA);
 
-    // Client-side filtering
-    const filteredWorkers = workers.filter(
-        (item) =>
-            allowedWorkerIDs.has(item.id) &&
-            item.name.toLowerCase().includes(search.toLowerCase())
-    );
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const handleGeneratePDF = (workerID: string, workerName: string) => {
-        const bagangID = selectedBagangs[workerID];
-        generatePDF({ workerID, workerName, bagangID: bagangID === "all" ? undefined : bagangID });
-    };
-
-    const handleBagangChange = (workerID: string, bagangID: string) => {
-        setSelectedBagangs(prev => ({ ...prev, [workerID]: bagangID }));
-    };
-
-    const paginatedData = filteredWorkers.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage,
+    const filteredRows = rows.filter((row) =>
+        (nameFilter === "all" || row.worker_name === nameFilter) &&
+        (bagangFilter === "all" || row.bagang_id === bagangFilter) &&
+        (seasonFilter === "all" || row.season_id.toString() === seasonFilter),
     );
 
     const columns: TableHeader[] = [
         {
-            key: "name",
-            title: "Nama Pekerja",
-            sortable: true,
-            columnClassName: "w-1/3",
+            key: "worker_name",
+            title: "Nama",
+            columnClassName: "w-1/4",
         },
         {
-            key: "bagang",
-            title: "Pilih Bagang",
-            columnClassName: "w-1/3",
-            render: (row) => {
-                // Filter bagangs where this worker is either worker or owner
-                const workerBagangs = allBagangs.filter(b => b.worker_id === row.id || b.owner_id === row.id);
-                const options = [
-                    { value: "all", label: "Semua Bagang" },
-                    ...workerBagangs.map(b => ({ value: b.id, label: b.name }))
-                ];
-
-                return (
-                    <div className="w-full max-w-xs">
-                        <Select
-                            options={options}
-                            value={selectedBagangs[row.id] || "all"}
-                            onChange={(val) => handleBagangChange(row.id, val)}
-                            placeholder="Pilih Bagang"
-                        />
-                    </div>
-                );
-            }
+            key: "bagang_name",
+            title: "Bagang",
+            columnClassName: "w-1/4",
+        },
+        {
+            key: "season_id",
+            title: "Musim",
+            columnClassName: "w-1/4",
+            render: (row: PayrollRow) => formatSeason(row),
         },
         {
             key: "actions",
             title: "Cetak PDF",
             hideOnMobile: true,
-            render: (row) => (
-                <div className="flex justify-center gap-2">
+            render: (row: PayrollRow) => (
+                <div className="flex justify-center">
                     <button
-                        onClick={() => handleGeneratePDF(row.id, row.name)}
+                        onClick={() => generatePDF({
+                            workerID: row.worker_id,
+                            workerName: row.worker_name,
+                            bagangID: row.bagang_id,
+                            seasonID: row.season_id,
+                        })}
                         className="p-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
                         disabled={isGenerating}
-                        title="Download Payroll PDF"
+                        aria-label={`Cetak PDF ${row.worker_name} ${row.bagang_name}`}
+                        title="Cetak PDF"
                     >
                         <DownloadIcon className="size-5" />
-                        <span className="text-sm font-medium">Download</span>
+                        <span className="text-sm font-medium">Cetak PDF</span>
                     </button>
                 </div>
             ),
         },
     ];
 
-    if (workerError) {
+    if (error) {
         return (
             <div className="p-4 md:p-6 2xl:p-10 text-red-500">
-                Error: {workerError instanceof Error ? workerError.message : "An unknown error occurred"}
+                Error: {error instanceof Error ? error.message : "An unknown error occurred"}
             </div>
         );
     }
 
     return (
         <div className="p-4 md:p-6 2xl:p-10 space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Select
+                    aria-label="Filter Nama"
+                    options={[{ value: "all", label: "Semua Nama" }, ...names.map((name) => ({ value: name, label: name }))]}
+                    value={nameFilter}
+                    onChange={(value) => {
+                        setNameFilter(value);
+                        setCurrentPage(1);
+                    }}
+                />
+                <Select
+                    aria-label="Filter Bagang"
+                    options={[{ value: "all", label: "Semua Bagang" }, ...bagangs.map(([id, name]) => ({ value: id, label: name }))]}
+                    value={bagangFilter}
+                    onChange={(value) => {
+                        setBagangFilter(value);
+                        setCurrentPage(1);
+                    }}
+                />
+                <Select
+                    aria-label="Filter Musim"
+                    options={[{ value: "all", label: "Semua Musim" }, ...seasons.map(([id, label]) => ({ value: id.toString(), label }))]}
+                    value={seasonFilter}
+                    onChange={(value) => {
+                        setSeasonFilter(value);
+                        setCurrentPage(1);
+                    }}
+                />
+            </div>
+
             <BasicTableData
+                title="Penggajian"
                 columns={columns}
-                data={paginatedData}
-                isLoading={isLoadingWorkers || isLoadingBagangs}
-                useNumbering={true}
+                data={filteredRows.slice((currentPage - 1) * 50, currentPage * 50)}
+                isLoading={isLoading}
                 pagination={{
                     current_page: currentPage,
-                    per_page: itemsPerPage,
-                    total: filteredWorkers.length,
+                    per_page: 50,
+                    total: filteredRows.length,
                 }}
-                onPageChange={handlePageChange}
-                onSearch={(val) => {
-                    setSearch(val);
-                    setCurrentPage(1);
-                }}
-                searchValue={search}
+                onPageChange={setCurrentPage}
             />
         </div>
     );

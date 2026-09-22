@@ -9,6 +9,7 @@ import { Modal } from "../../../component/ui/modal";
 import useProductionCostTypeQuery from "../../../features/production-cost-type/hooks/useProductionCostType";
 import { ProductionCostProps } from "../../../features/production-cost/api/production-cost.type";
 import { BagangProps } from "../../../features/bagang/api/bagang.type";
+import { useAuth } from "../../../context/AuthContext";
 
 const schema = z.object({
     production_costs_type: z.string().min(1, "Jenis pengeluaran wajib dipilih"),
@@ -36,6 +37,11 @@ export default function ProductionCostFormModal({
     isLoading,
     bagang,
 }: ProductionCostFormModalProps) {
+    const { user } = useAuth();
+    const lockedCreatorRole =
+        user?.role === "WORKER" || user?.role === "OWNER"
+            ? initialData?.creator_role ?? user.role.toLowerCase()
+            : null;
     const { data: costTypeResponse } = useProductionCostTypeQuery();
     const costTypes = useMemo(() => {
         return (
@@ -48,23 +54,34 @@ export default function ProductionCostFormModal({
 
     const creatorOptions = useMemo(() => {
         if (!bagang) return [];
-        
-        const options = [];
         const isSamePerson = bagang.worker_id === bagang.owner_id;
+        if (lockedCreatorRole === "worker") {
+            return [{ value: "worker", label: `Pekerja - ${bagang.worker_name}` }];
+        }
+        if (lockedCreatorRole === "owner") {
+            return [{ value: "owner", label: `Pemilik - ${bagang.owner_name}` }];
+        }
+        if (lockedCreatorRole === "both") {
+            return [{
+                value: "both",
+                label: isSamePerson ? `Umum - ${bagang.worker_name}` : "Umum",
+            }];
+        }
 
+        const options = [];
         if (isSamePerson) {
-             options.push({ value: "both", label: `Umum - ${bagang.worker_name}` });
+            options.push({ value: "both", label: `Umum - ${bagang.worker_name}` });
         } else {
-             options.push({ value: "both", label: "Umum" });
-             if (bagang.worker_id) {
-                 options.push({ value: "worker", label: `Pekerja - ${bagang.worker_name}` });
-             }
-             if (bagang.owner_id) {
-                 options.push({ value: "owner", label: `Pemilik - ${bagang.owner_name}` });
-             }
+            options.push({ value: "both", label: "Umum" });
+            if (bagang.worker_id) {
+                options.push({ value: "worker", label: `Pekerja - ${bagang.worker_name}` });
+            }
+            if (bagang.owner_id) {
+                options.push({ value: "owner", label: `Pemilik - ${bagang.owner_name}` });
+            }
         }
         return options;
-    }, [bagang]);
+    }, [bagang, lockedCreatorRole]);
 
     const {
         register,
@@ -83,17 +100,17 @@ export default function ProductionCostFormModal({
                 reset({
                     production_costs_type: initialData.production_costs_type,
                     price: initialData.price.toString(),
-                    creator_role: initialData.creator_role || "both",
+                    creator_role: lockedCreatorRole ?? initialData.creator_role ?? "both",
                 });
             } else {
                 reset({
                     production_costs_type: "",
                     price: "",
-                    creator_role: "both",
+                    creator_role: lockedCreatorRole ?? "both",
                 });
             }
         }
-    }, [isOpen, initialData, reset, bagang]);
+    }, [isOpen, initialData, reset, lockedCreatorRole]);
 
     return (
         <Modal

@@ -4,7 +4,7 @@ import type { TableHeader } from "../../../component/table/types";
 import useHarvestsQuery from "../../../features/harvest/hooks/useHarvestsQuery";
 import useProductionCostsQuery from "../../../features/production-cost/hooks/useProductionCostsQuery";
 import useBagangDetailQuery from "../../../features/bagang/hooks/useBagangDetailQuery";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import Button from "../../../component/ui/button/Button";
 import { ChevronLeftIcon, PencilIcon, TrashBinIcon } from "../../../icons";
 import useCreateHarvestMutation from "../../../features/harvest/hooks/useCreateHarvestMutation";
@@ -18,11 +18,20 @@ import ProductionCostFormModal from "./ProductionCostFormModal";
 import { HarvestProps } from "../../../features/harvest/api/harvest.type";
 import { ProductionCostProps } from "../../../features/production-cost/api/production-cost.type";
 import toast from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
+import useGetAllSeasons from "../../../features/season/hooks/useGetAllSeasons";
 
 const DetailSalesPage = () => {
     const { id } = useParams<{ id: string }>();
     const bagangId = id || "";
     const [activeTab, setActiveTab] = useState<"harvest" | "cost">("harvest");
+    const [selectedSeasonId, setSelectedSeasonId] = useState<string>();
+    const { user } = useAuth();
+    const { data: seasonResponse } = useGetAllSeasons();
+    const seasons = seasonResponse?.data || [];
+    const activeSeasonId = seasons.find((season) => !season.end_date)?.id.toString() ?? "all";
+    const effectiveSeasonId = selectedSeasonId ?? activeSeasonId;
+    const isAllSeasons = effectiveSeasonId === "all";
 
     const [isHarvestModalOpen, setIsHarvestModalOpen] = useState(false);
     const [editingHarvest, setEditingHarvest] = useState<HarvestProps | null>(null);
@@ -34,8 +43,12 @@ const DetailSalesPage = () => {
         useHarvestsQuery(bagangId);
     const { data: costResponse, isLoading: isLoadingCosts } =
         useProductionCostsQuery(bagangId);
-    const { data: bagangResponse } = useBagangDetailQuery(bagangId);
-    
+    const {
+        data: bagangResponse,
+        isLoading: isLoadingBagang,
+        isError: isBagangError,
+    } = useBagangDetailQuery(bagangId);
+
     const bagang = bagangResponse?.data?.data;
 
     const { mutate: createHarvest, isPending: isCreatingHarvest } =
@@ -56,6 +69,7 @@ const DetailSalesPage = () => {
             {
                 onSuccess: () => {
                     setIsHarvestModalOpen(false);
+                    setSelectedSeasonId(undefined);
                     toast.success("Panen ditambahkan");
                 },
                 onError: () => {
@@ -97,6 +111,7 @@ const DetailSalesPage = () => {
             {
                 onSuccess: () => {
                     setIsCostModalOpen(false);
+                    setSelectedSeasonId(undefined);
                     toast.success("Pengeluaran ditambahkan");
                 },
                 onError: () => toast.error("Gagal menambahkan"),
@@ -148,7 +163,28 @@ const DetailSalesPage = () => {
         setIsCostModalOpen(true);
     };
 
+    const canMutateHarvest = user?.role === "ADMIN" || user?.role === "OWNER";
+    const canMutateCost = (cost: ProductionCostProps) =>
+        user?.role === "ADMIN" ||
+        (user?.role === "OWNER" &&
+            cost.created_by === user.worker_id &&
+            (cost.creator_role === "owner" || cost.creator_role === "both"));
+
+    const seasonLabel = (id: number) => {
+        const season = seasons.find((item) => item.id === id);
+        return season
+            ? `${season.start_date.slice(0, 10)}${season.end_date ? ` - ${season.end_date.slice(0, 10)}` : " (Aktif)"}`
+            : `Musim ${id}`;
+    };
+
     const harvestColumns: TableHeader[] = [
+        ...(isAllSeasons
+            ? [{
+                key: "harvests_season",
+                title: "Musim",
+                render: (row: HarvestProps) => seasonLabel(row.harvests_season),
+            }]
+            : []),
         {
             key: "harvest_date",
             title: "Tanggal",
@@ -178,27 +214,29 @@ const DetailSalesPage = () => {
                 </div>
             ),
         },
-        {
+        ...(canMutateHarvest ? [{
             key: "actions",
             title: "Aksi",
             hideOnMobile: true,
-            render: (row) => (
+            render: (row: HarvestProps) => (
                 <div className="flex gap-2">
                     <button
                         onClick={() => openEditHarvestModal(row)}
+                        aria-label={`Edit panen ${row.id}`}
                         className="text-blue-500 hover:text-blue-700"
                     >
                         <PencilIcon className="size-5" />
                     </button>
                     <button
                         onClick={() => handleDeleteHarvest(row.id)}
+                        aria-label={`Hapus panen ${row.id}`}
                         className="text-red-500 hover:text-red-700"
                     >
                         <TrashBinIcon className="size-5" />
                     </button>
                 </div>
             ),
-            mobileRender: (row) => (
+            mobileRender: (row: HarvestProps) => (
                 <>
                     <button
                         onClick={() => openEditHarvestModal(row)}
@@ -214,10 +252,17 @@ const DetailSalesPage = () => {
                     </button>
                 </>
             ),
-        },
+        }] : []),
     ];
 
     const costColumns: TableHeader[] = [
+        ...(isAllSeasons
+            ? [{
+                key: "production_costs_season",
+                title: "Musim",
+                render: (row: ProductionCostProps) => seasonLabel(row.production_costs_season),
+            }]
+            : []),
         {
             key: "created_at",
             title: "Tanggal",
@@ -245,23 +290,25 @@ const DetailSalesPage = () => {
             key: "actions",
             title: "Aksi",
             hideOnMobile: true,
-            render: (row) => (
+            render: (row) => canMutateCost(row) ? (
                 <div className="flex gap-2">
                     <button
                         onClick={() => openEditCostModal(row)}
+                        aria-label={`Edit pengeluaran ${row.id}`}
                         className="text-blue-500 hover:text-blue-700"
                     >
                         <PencilIcon className="size-5" />
                     </button>
                     <button
                         onClick={() => handleDeleteCost(row.id)}
+                        aria-label={`Hapus pengeluaran ${row.id}`}
                         className="text-red-500 hover:text-red-700"
                     >
                         <TrashBinIcon className="size-5" />
                     </button>
                 </div>
-            ),
-            mobileRender: (row) => (
+            ) : null,
+            mobileRender: (row) => canMutateCost(row) ? (
                 <>
                     <button
                         onClick={() => openEditCostModal(row)}
@@ -276,9 +323,12 @@ const DetailSalesPage = () => {
                         Hapus
                     </button>
                 </>
-            ),
+            ) : null,
         },
     ];
+
+    if (isLoadingBagang) return <p role="status">Memuat...</p>;
+    if (isBagangError) return <Navigate to="/pembelian" replace />;
 
     return (
         <div className="space-y-6">
@@ -287,7 +337,7 @@ const DetailSalesPage = () => {
                     Detail Pembelian
                 </h1>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {activeTab === "harvest" ? (
+                    {user?.role !== "WORKER" && (activeTab === "harvest" ? (
                         <Button
                             size="sm"
                             variant="primary"
@@ -305,7 +355,7 @@ const DetailSalesPage = () => {
                         >
                             Tambah Pengeluaran
                         </Button>
-                    )}
+                    ))}
                     <Link to="/pembelian">
                         <Button variant="outline" size="sm" fullWidth>
                             <ChevronLeftIcon className="w-5 h-5" />
@@ -313,6 +363,25 @@ const DetailSalesPage = () => {
                         </Button>
                     </Link>
                 </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+                <label htmlFor="purchase-season" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Filter musim
+                </label>
+                <select
+                    id="purchase-season"
+                    value={effectiveSeasonId}
+                    onChange={(event) => setSelectedSeasonId(event.target.value)}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                >
+                    <option value="all">Semua Musim</option>
+                    {seasons.map((season) => (
+                        <option key={season.id} value={season.id}>
+                            {seasonLabel(season.id)}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="border-b border-gray-200 dark:border-gray-700">
@@ -344,7 +413,9 @@ const DetailSalesPage = () => {
                 <>
                     <BasicTableData
                         columns={harvestColumns}
-                        data={harvestResponse?.data?.data || []}
+                        data={(harvestResponse?.data?.data || []).filter(
+                            (harvest) => isAllSeasons || harvest.harvests_season === Number(effectiveSeasonId),
+                        )}
                         isLoading={isLoadingHarvests}
                         useNumbering
                     />
@@ -360,7 +431,9 @@ const DetailSalesPage = () => {
                 <>
                     <BasicTableData
                         columns={costColumns}
-                        data={costResponse?.data?.data || []}
+                        data={(costResponse?.data?.data || []).filter(
+                            (cost) => isAllSeasons || cost.production_costs_season === Number(effectiveSeasonId),
+                        )}
                         isLoading={isLoadingCosts}
                         useNumbering
                     />

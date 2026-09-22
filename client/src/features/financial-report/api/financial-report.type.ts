@@ -18,6 +18,7 @@ export type FinancialProductionCostItem = {
 };
 
 export type FinancialReport = {
+    total_harvest_value: number;
     total_sales_revenue: number;
     total_paid: number;
     accounts_receivable: number;

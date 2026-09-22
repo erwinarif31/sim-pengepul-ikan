@@ -31,11 +31,29 @@ function App() {
             >
                 <Route index path="/" element={<DashboardPage />} />
                 <Route path="/bagang" element={<BagangPage />} />
-                <Route path="/musim" element={<SeasonPage />} />
-                <Route path="/jenis-ikan" element={<HarvestTypePage />} />
+                <Route
+                    path="/musim"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <SeasonPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/jenis-ikan"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <HarvestTypePage />
+                        </ProtectedRoute>
+                    }
+                />
                 <Route
                     path="/jenis-pengeluaran"
-                    element={<ProductionCostTypePage />}
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN"]} fallbackTo="/">
+                            <ProductionCostTypePage />
+                        </ProtectedRoute>
+                    }
                 />
                 <Route
                     path="/pekerja"
@@ -69,7 +87,14 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
-                <Route path="/pelanggan" element={<CustomerPage />} />
+                <Route
+                    path="/pelanggan"
+                    element={
+                        <ProtectedRoute allowedRoles={["ADMIN", "OWNER"]} fallbackTo="/">
+                            <CustomerPage />
+                        </ProtectedRoute>
+                    }
+                />
                 <Route path="/penggajian" element={<PayrollPage />} />
                 <Route path="/stok" element={<StockPage />} />
                 <Route

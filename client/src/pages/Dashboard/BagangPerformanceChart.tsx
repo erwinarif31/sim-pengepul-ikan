@@ -11,7 +11,7 @@ interface BagangPerformanceChartProps {
 export default function BagangPerformanceChart({ data, isLoading }: BagangPerformanceChartProps) {
     const categories = data?.map((item) => item.bagang_name) ?? [];
     const revenues = data?.map((item) => item.sales_revenue) ?? [];
-    const costs = data?.map((item) => item.production_cost) ?? [];
+    const capitals = data?.map((item) => item.harvest_value) ?? [];
 
     const options: ApexOptions = {
         colors: ["#465fff", "#ff6b6b"],
@@ -90,21 +90,21 @@ export default function BagangPerformanceChart({ data, isLoading }: BagangPerfor
             data: revenues,
         },
         {
-            name: "Biaya Produksi",
-            data: costs,
+            name: "Modal (Nilai Panen)",
+            data: capitals,
         },
     ];
 
     if (isLoading) {
         return (
-            <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs biaya produksi">
+            <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs modal (nilai panen)">
                 <div className="h-[300px] bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
             </ComponentCard>
         );
     }
 
     return (
-        <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs biaya produksi">
+        <ComponentCard title="Performa Bagang" desc="Pendapatan penjualan vs modal (nilai panen)">
             <div className="max-w-full overflow-x-auto custom-scrollbar">
                 <div className="-ml-3 min-w-[300px] sm:min-w-[400px] xl:min-w-full">
                     <Chart options={options} series={series} type="bar" height={300} />

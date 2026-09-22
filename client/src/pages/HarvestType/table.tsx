@@ -12,7 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 const HarvestTypeTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
     const [search, setSearch] = useState("");
     const { user } = useAuth();
     const canManage = user?.role === "ADMIN";
@@ -66,6 +66,7 @@ const HarvestTypeTable = () => {
                 <div className="flex justify-center gap-2">
                     <button
                         onClick={() => handleDelete(row.name)}
+                        aria-label={`Hapus jenis ikan ${row.name}`}
                         className="text-red-500 hover:text-red-700"
                     >
                         <TrashBinIcon className="size-5" />

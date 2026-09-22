@@ -67,11 +67,13 @@ const masterDataItems: NavItem[] = [
         name: "Bagang",
         icon: <BoxIcon />,
         path: "/bagang",
+        roles: ["ADMIN", "OWNER", "WORKER"],
     },
     {
         name: "Musim",
         icon: <CalenderIcon />,
         path: "/musim",
+        roles: ["ADMIN"],
     },
     {
         name: "Pekerja",
@@ -89,7 +91,7 @@ const masterDataItems: NavItem[] = [
         name: "Pelanggan",
         icon: <UserCircleIcon />,
         path: "/pelanggan",
-        roles: ["ADMIN", "OWNER", "WORKER"],
+        roles: ["ADMIN", "OWNER"],
     },
 ];
 
@@ -98,11 +100,13 @@ const referenceItems: NavItem[] = [
         name: "Jenis Ikan",
         icon: <ListIcon />,
         path: "/jenis-ikan",
+        roles: ["ADMIN"],
     },
     {
         name: "Jenis Pengeluaran",
         icon: <FileIcon />,
         path: "/jenis-pengeluaran",
+        roles: ["ADMIN"],
     },
 ];
 
@@ -111,6 +115,7 @@ const AppSidebar: React.FC = () => {
     const location = useLocation();
     const { user } = useAuth();
     const role = user?.role;
+    const canView = (item: NavItem) => !item.roles || (role !== undefined && item.roles.includes(role));
 
     const [openSubmenu, setOpenSubmenu] = useState<
         {
@@ -198,7 +203,7 @@ const AppSidebar: React.FC = () => {
     ) => (
         (
             <ul className="flex flex-col gap-4">
-                {items.filter((nav) => !nav.roles || (role && nav.roles.includes(role))).map((nav, index) => (
+                {items.filter(canView).map((nav, index) => (
                     <li key={nav.name}>
                         {nav.subItems
                             ? (
@@ -388,34 +393,38 @@ const AppSidebar: React.FC = () => {
                             </h2>
                             {renderMenuItems(navItems, "main")}
                         </div>
-                        <div className="">
-                            <h2
-                                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                                        ? "lg:justify-center"
-                                        : "justify-start"
-                                    }`}
-                            >
-                                {isExpanded || isHovered || isMobileOpen
-                                    ? (
-                                        "Master Data"
-                                    )
-                                    : <HorizontaLDots />}
-                            </h2>
-                            {renderMenuItems(masterDataItems, "master-data")}
-                        </div>
-                        <div className="">
-                            <h2
-                                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                                        ? "lg:justify-center"
-                                        : "justify-start"
-                                    }`}
-                            >
-                                {isExpanded || isHovered || isMobileOpen
-                                    ? "Referensi"
-                                    : <HorizontaLDots />}
-                            </h2>
-                            {renderMenuItems(referenceItems, "reference")}
-                        </div>
+                        {masterDataItems.some(canView) && (
+                            <div className="">
+                                <h2
+                                    className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                                            ? "lg:justify-center"
+                                            : "justify-start"
+                                        }`}
+                                >
+                                    {isExpanded || isHovered || isMobileOpen
+                                        ? (
+                                            "Master Data"
+                                        )
+                                        : <HorizontaLDots />}
+                                </h2>
+                                {renderMenuItems(masterDataItems, "master-data")}
+                            </div>
+                        )}
+                        {referenceItems.some(canView) && (
+                            <div className="">
+                                <h2
+                                    className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                                            ? "lg:justify-center"
+                                            : "justify-start"
+                                        }`}
+                                >
+                                    {isExpanded || isHovered || isMobileOpen
+                                        ? "Referensi"
+                                        : <HorizontaLDots />}
+                                </h2>
+                                {renderMenuItems(referenceItems, "reference")}
+                            </div>
+                        )}
                     </div>
                 </nav>
             </div>

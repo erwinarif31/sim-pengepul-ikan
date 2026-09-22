@@ -6,6 +6,7 @@ import useCustomerQuery from "../../features/customer/hooks/useCustomer";
 import useCreateSalesMutation from "../../features/sales/hooks/useCreateSalesMutation";
 import CustomerFormModal from "../Customer/FormModal";
 import useCreateCustomerMutation from "../../features/customer/hooks/useCreateCustomerMutation";
+import { useAuth } from "../../context/AuthContext";
 
 interface CreateSalesModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface CreateSalesModalProps {
 }
 
 const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) => {
+    const { user } = useAuth();
     const [selectedCustomer, setSelectedCustomer] = useState("");
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
@@ -78,14 +80,16 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                                         placeholder="Pilih Pelanggan"
                                     />
                                 </div>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setIsCustomerModalOpen(true)}
-                                >
-                                    +
-                                </Button>
+                                {user?.role === "ADMIN" && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setIsCustomerModalOpen(true)}
+                                    >
+                                        +
+                                    </Button>
+                                )}
                             </div>
                         </div>
 
@@ -113,12 +117,14 @@ const CreateSalesModal: React.FC<CreateSalesModalProps> = ({ isOpen, onClose }) 
                 </div>
             </Modal>
 
-            <CustomerFormModal
-                isOpen={isCustomerModalOpen}
-                onClose={() => setIsCustomerModalOpen(false)}
-                onSubmit={handleCreateCustomer}
-                isLoading={isCreatingCustomer}
-            />
+            {user?.role === "ADMIN" && (
+                <CustomerFormModal
+                    isOpen={isCustomerModalOpen}
+                    onClose={() => setIsCustomerModalOpen(false)}
+                    onSubmit={handleCreateCustomer}
+                    isLoading={isCreatingCustomer}
+                />
+            )}
         </>
     );
 };

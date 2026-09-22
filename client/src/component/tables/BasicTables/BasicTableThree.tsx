@@ -147,7 +147,7 @@ const transactionData: Transaction[] = [
 export default function BasicTableThree() {
   // State for current page and items per page
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5; // Set the number of items per page
+  const itemsPerPage = 50; // Set the number of items per page
 
   // Calculate the indexes for the current page
   const indexOfLastItem = currentPage * itemsPerPage;

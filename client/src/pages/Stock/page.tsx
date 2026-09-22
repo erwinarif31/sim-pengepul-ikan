@@ -80,8 +80,9 @@ export default function StockPage() {
                 <ComponentCard title="Filter Stok" desc="Filter menggunakan musim dan periode laporan">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Musim</label>
+                            <label htmlFor="stock-season" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Musim</label>
                             <Select
+                                id="stock-season"
                                 options={seasonOptions}
                                 value={selectedSeasonId?.toString() ?? ""}
                                 onChange={(value) => setSelectedSeasonId(Number(value))}
@@ -89,8 +90,9 @@ export default function StockPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Bagang</label>
+                            <label htmlFor="stock-bagang" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Bagang</label>
                             <Select
+                                id="stock-bagang"
                                 options={bagangOptions}
                                 value={bagangId}
                                 onChange={setBagangId}
@@ -98,8 +100,9 @@ export default function StockPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Jenis ikan</label>
+                            <label htmlFor="stock-harvest-type" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Jenis ikan</label>
                             <Select
+                                id="stock-harvest-type"
                                 options={harvestTypeOptions}
                                 value={harvestType}
                                 onChange={setHarvestType}
@@ -107,12 +110,12 @@ export default function StockPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal awal</label>
-                            <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+                            <label htmlFor="stock-start-date" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal awal</label>
+                            <Input id="stock-start-date" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal akhir</label>
-                            <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+                            <label htmlFor="stock-end-date" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal akhir</label>
+                            <Input id="stock-end-date" type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
                         </div>
                     </div>
                 </ComponentCard>

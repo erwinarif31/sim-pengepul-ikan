@@ -54,14 +54,15 @@ export default function FinancialReportPage() {
 
     return (
         <>
-            <PageMeta title="Catchery | Laporan Keuangan" description="Ringkasan pendapatan dan biaya" />
+            <PageMeta title="Catchery | Laporan Keuangan" description="Ringkasan pendapatan, modal, dan pinjaman" />
             <PageBreadcrumb pageTitle="Laporan Keuangan" />
             <div className="space-y-6">
-                <ComponentCard title="Filter Laporan" desc="Laporan menggunakan pendapatan penjualan dan biaya produksi">
+                <ComponentCard title="Filter Laporan" desc="Laba dihitung dari pendapatan penjualan dikurangi modal (nilai panen)">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Musim</label>
+                            <label htmlFor="report-season" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Musim</label>
                             <Select
+                                id="report-season"
                                 options={seasonOptions}
                                 value={selectedSeasonId?.toString() ?? ""}
                                 onChange={(value) => setSelectedSeasonId(Number(value))}
@@ -69,8 +70,9 @@ export default function FinancialReportPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Bagang</label>
+                            <label htmlFor="report-bagang" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Bagang</label>
                             <Select
+                                id="report-bagang"
                                 options={bagangOptions}
                                 value={bagangId}
                                 onChange={setBagangId}
@@ -78,12 +80,12 @@ export default function FinancialReportPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal awal</label>
-                            <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+                            <label htmlFor="report-start-date" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal awal</label>
+                            <Input id="report-start-date" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal akhir</label>
-                            <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+                            <label htmlFor="report-end-date" className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">Tanggal akhir</label>
+                            <Input id="report-end-date" type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
                         </div>
                     </div>
                 </ComponentCard>
@@ -92,12 +94,13 @@ export default function FinancialReportPage() {
                 {isLoading && <p className="text-gray-500 dark:text-gray-400">Memuat laporan keuangan...</p>}
                 {!isLoading && !hasError && report && (
                     <>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
                             {[
+                                ["Modal (nilai panen)", report.total_harvest_value],
                                 ["Pendapatan penjualan", report.total_sales_revenue],
                                 ["Total pembayaran", report.total_paid],
                                 ["Piutang", report.accounts_receivable],
-                                ["Biaya produksi", report.total_production_cost],
+                                ["Biaya produksi (pinjaman)", report.total_production_cost],
                                 ["Laba bersih", report.net_profit],
                             ].map(([label, value]) => (
                                 <div key={label} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -146,7 +149,7 @@ export default function FinancialReportPage() {
                             )}
                         </ComponentCard>
 
-                        <ComponentCard title="Rincian Biaya Produksi" desc="Biaya produksi per bagang">
+                        <ComponentCard title="Rincian Biaya Produksi" desc="Pinjaman biaya produksi per bagang">
                             {report.production_costs.length === 0 ? (
                                 <p className="text-gray-500 dark:text-gray-400">Tidak ada biaya produksi untuk filter ini.</p>
                             ) : (

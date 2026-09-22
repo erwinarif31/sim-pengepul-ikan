@@ -28,7 +28,7 @@ const DetailSalesPage = () => {
     const [itemSearch, setItemSearch] = useState("");
     const { user } = useAuth();
     const canMutateSales = user?.role !== "WORKER";
-    const canMutatePayments = user?.role === "ADMIN";
+    const canMutatePayments = user?.role === "ADMIN" || user?.role === "OWNER";
 
     const { data: response, isLoading } = useSalesDetailQuery(salesId);
     const salesData = response?.data?.data;
@@ -122,8 +122,8 @@ const DetailSalesPage = () => {
         ...(canMutateSales ? [{
             key: "actions", title: "Aksi", hideOnMobile: true, render: (row: any) => (
                 <div className="flex gap-2">
-                    <button onClick={() => openEditItem(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
-                    <button onClick={() => handleDeleteItem(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
+                    <button onClick={() => openEditItem(row)} aria-label={`Edit item ${row.id}`} className="text-blue-500"><PencilIcon className="size-4" /></button>
+                    <button onClick={() => handleDeleteItem(row.id)} aria-label={`Hapus item ${row.id}`} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
             ),
             mobileRender: (row: any) => (
@@ -141,8 +141,8 @@ const DetailSalesPage = () => {
         ...(canMutatePayments ? [{
             key: "actions", title: "Aksi", hideOnMobile: true, render: (row: any) => (
                 <div className="flex gap-2">
-                    <button onClick={() => openEditPayment(row)} className="text-blue-500"><PencilIcon className="size-4" /></button>
-                    <button onClick={() => handleDeletePayment(row.id)} className="text-red-500"><TrashBinIcon className="size-4" /></button>
+                    <button onClick={() => openEditPayment(row)} aria-label={`Edit pembayaran ${row.id}`} className="text-blue-500"><PencilIcon className="size-4" /></button>
+                    <button onClick={() => handleDeletePayment(row.id)} aria-label={`Hapus pembayaran ${row.id}`} className="text-red-500"><TrashBinIcon className="size-4" /></button>
                 </div>
             ),
             mobileRender: (row: any) => (
@@ -209,13 +209,15 @@ const DetailSalesPage = () => {
                 <BasicTableData columns={itemColumns} data={filteredItems} useNumbering />
             </div>
 
-            <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
-                    {canMutatePayments && <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>}
+            {canMutatePayments && (
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 className="text-lg font-semibold">Riwayat Pembayaran</h2>
+                        <Button size="sm" fullWidth onClick={openAddPayment}>Tambah Pembayaran</Button>
+                    </div>
+                    <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
                 </div>
-                <BasicTableData columns={paymentColumns} data={salesData.transaction_details || []} useNumbering />
-            </div>
+            )}
 
             <AddItemModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSubmit={handleItemSubmit} isLoading={isAddingItem || isUpdatingItem} initialData={editingItem} />
             {canMutatePayments && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} onSubmit={handlePaymentSubmit} isLoading={isAddingPayment || isUpdatingPayment} maxAmount={remaining + (editingPayment ? editingPayment.amount : 0)} initialData={editingPayment} />}

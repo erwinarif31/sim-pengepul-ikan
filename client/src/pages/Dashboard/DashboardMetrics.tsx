@@ -31,7 +31,7 @@ export default function DashboardMetricsCard({ data, isLoading }: DashboardMetri
         },
         {
             id: 2,
-            title: "Biaya Produksi",
+            title: "Biaya Produksi (Pinjaman)",
             value: formatCurrency(data?.total_costs ?? 0),
             icon: GroupIcon,
             iconBg: "bg-warning-50 dark:bg-warning-500/10",

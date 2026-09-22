@@ -63,7 +63,7 @@ export default function RecentSalesTable({ data, isLoading }: RecentSalesTablePr
     ];
 
     return (
-        <ComponentCard title="Penjualan Terbaru" desc="5 transaksi penjualan terakhir">
+        <ComponentCard title="Penjualan Terbaru" desc="50 transaksi penjualan terakhir">
             <BasicTableData
                 columns={columns}
                 data={data ?? []}

@@ -27,7 +27,7 @@ const ProductionCostDetailTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
 
     const { id } = useParams<{ id: string }>();
 

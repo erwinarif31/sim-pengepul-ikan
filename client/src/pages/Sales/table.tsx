@@ -10,11 +10,11 @@ import { useAuth } from "../../context/AuthContext";
 
 const SalesTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 50;
     const [search, setSearch] = useState("");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const { user } = useAuth();
-    const canCreateSales = user?.role !== "WORKER";
+    const canCreateSales = user?.role === "ADMIN";
 
     const { data: response, isLoading, error } = useSalesQuery();
 
